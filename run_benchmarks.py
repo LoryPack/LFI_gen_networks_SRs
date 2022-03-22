@@ -144,8 +144,9 @@ def main(args):
                         join(run.dir, "checkpoint_dataloader%d.pt" % (rnd - 1))
                     )
             # Move to GPU
-            gen.cuda()
-            dis.cuda()
+            if not args.no_cuda:
+                gen.cuda()
+                dis.cuda()
 
             # Make optimiser
             print("Make optimiser")
@@ -224,6 +225,7 @@ def main(args):
                 seq_impwts=seq_impwts,
                 lat_dist=opt.lat_dist,
                 save_dir=opt.logger.dir,
+                cuda=not args.no_cuda
             )
             if rnd > 0:
                 opt.logger.log(make_results.calc_c2st(config.obs_num))
@@ -241,4 +243,5 @@ if __name__ == "__main__":
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--run_id", type=str, default=None)
     parser.add_argument("--resume_dir", type=str, default=None)
+    parser.add_argument("--no_cuda", action="store_true")
     main(parser.parse_known_args())

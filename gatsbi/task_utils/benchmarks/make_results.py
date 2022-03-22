@@ -17,6 +17,7 @@ class MakeResults:
         seq_impwts: Optional[str] = "impwts",
         lat_dist: Optional[Callable] = None,
         save_dir: Optional[str] = None,
+        cuda: bool = False
     ) -> None:
         """
         Get posterior samples from the generator, posterior predictive samples
@@ -34,6 +35,7 @@ class MakeResults:
         self.seq_impwts = seq_impwts
         self.lat_dist = lat_dist
         self.save_dir = save_dir
+        self.cuda = cuda
 
         if "ebm" in self.seq_impwts:
             assert self.lat_dist is not None
@@ -56,8 +58,11 @@ class MakeResults:
         # need only the upper bound, because prior bounds are symmetric for both apps
         rej_thresh = self.task.prior_params["high"]
 
-        self.generator.cuda()
-        obs = self.task.get_observation(obs_num).cuda()
+        if self.cuda:
+            self.generator.cuda()
+        obs = self.task.get_observation(obs_num)
+        if self.cuda:
+            obs = obs.cuda()
 
         # Rejection sample
         tot_samples = 0
@@ -67,7 +72,9 @@ class MakeResults:
         while sample_size > 0 and tot_samples < (10 * num_samples):
             sample_size -= i
             tot_samples += sample_size
-            obs_repeat = obs.repeat(sample_size, 1).cuda()
+            obs_repeat = obs.repeat(sample_size, 1)
+            if self.cuda:
+                obs_repeat = obs_repeat.cuda()
             if "ebm" not in self.seq_impwts:
                 samp = self.generator.forward(obs_repeat).data.cpu()
             else:

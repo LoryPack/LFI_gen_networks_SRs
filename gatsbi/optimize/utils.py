@@ -146,8 +146,8 @@ def _log_metrics(opt):
     opt.discriminator.train()
 
     # Update logger
-    if opt.logger is not None:
-        opt.logger.history.add(dict(opt.df.loc[opt.logger.step]))
+    # if opt.logger is not None:
+    #     opt.logger.history.add(dict(opt.df.loc[opt.logger.step]))
 
 
 def _log_metrics_sr(opt):
@@ -187,8 +187,8 @@ def _log_metrics_sr(opt):
     opt.generator.train()
 
     # Update logger
-    if opt.logger is not None:
-        opt.logger.history.add(dict(opt.df.loc[opt.logger.step]))
+    # if opt.logger is not None:
+    #     opt.logger.history.add(dict(opt.df.loc[opt.logger.step]))
 
 
 def _stop_training(opt):

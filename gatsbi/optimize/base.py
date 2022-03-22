@@ -12,7 +12,7 @@ import gatsbi.utils as utils
 from gatsbi.networks import BaseNetwork, Discriminator, Generator
 
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
-                    _stop_training)
+                    _stop_training, _log_metrics_sr, _make_checkpoint_sr)
 
 
 class Base:
@@ -271,3 +271,192 @@ class Base:
                     _make_checkpoint(self, init=False)
 
                 stop_training = _stop_training(self)
+
+
+class BaseSR:
+    """Base class for amortised GATSBI training."""
+
+    def __init__(
+        self,
+        generator: BaseNetwork or Generator,
+        prior: Callable,
+        simulator: Callable,
+        optim_args: Tuple[float, Tuple[float, float]],
+        dataloader: Optional[dict] = dict(),
+        scoring_rule: Optional[str] = "energy_score",
+        round_number: Optional[int] = 0,
+        reuse_samples: Optional[bool] = False,
+        training_opts: Optional[dict] = dict(
+            num_simulations=1000,
+            sample_seed=42,
+            hold_out=100,
+            batch_size=1000,
+            log_dataloader=True,
+        ),
+        logger: Optional[Callable] = None,
+    ) -> None:
+        """
+        Set up base class for amortised GATSBI training.
+
+        Args:
+            generator: generator network that takes either observations, or
+                       observations and latents as inputs.
+            prior: prior distribution function that takes number of samples as
+                   input and returns corresponding number of parameter samples.
+            simulator: simulator function that takes parameter samples as
+                       input and returns corresponding observations.
+            *optim_args: arguments for ADAM optimiser corresponding to
+                         generator and discriminator, in that order.
+            dataloader: dictionary with round numbers as keys, and entries as
+                        MakeDataset objects.
+            scoring_rule: 'energy_score' or 'kernel_score'.
+                   See gatsbi.utils.scoring_rules docs for more information
+            round_number: round number for training
+            reuse_samples: if True, reuse samples from previous rounds for
+                           training.
+            training_opts: hyper-parameters for training Gen-SR
+                num_simulations (int): simulation budget i.e. maximum number
+                                       of calls to simulator allowed across all
+                                       rounds. Default is 1000.
+                samples_seed (int): random seed for prior/simulator sampling.
+                                    Default is 42.
+                hold_out (int): number of prior samples / observations to hold
+                                out as test data. Default is 100.
+                batch_size (int): batch size for gradient descent.
+            logger: wandb.run object for logging data. If None, data is not
+                    logged.
+        """
+        # Set constants
+        self.epoch_ct = 0
+        self.round_number = round_number
+        self.reuse_samples = reuse_samples
+        # keep track of which round the samples are from
+        self.sample_from_round = self.round_number
+        self.df = pandas.DataFrame(
+            columns=[
+                "gen_loss",
+                "gen_grad",
+                "global_step",
+            ]
+        )
+        self.start = time()
+
+        # Initialise networks / callables
+        self.generator = generator
+        self.simulator = simulator
+        self.prior = prior
+
+        self.dataloader = dataloader
+        self.scoring_rule = getattr(utils, scoring_rule)
+        self.logger = logger
+
+        # Initialise optimisers
+        gen_opt_args = optim_args[0]
+        self.generator_optim = Adam(self.generator.parameters(), *gen_opt_args)
+
+        # Set device
+        self.device = list(self.generator.parameters())[0].device
+
+        # Hyper-parameters for training
+        self.training_opts = Namespace(**training_opts)
+
+        # Make training data loader
+        if not _check_data_bank(self.round_number, self.dataloader):
+            data = _sample(
+                prior=self.prior,
+                simulator=self.simulator,
+                sample_seed=self.training_opts.sample_seed,
+                num_samples=self.training_opts.num_simulations,
+            )
+            inputs_to_loader_class = {
+                "inputs": data,
+                "hold_out": self.training_opts.hold_out,
+            }
+            loader = utils.make_loader(
+                self.training_opts.batch_size,
+                inputs_to_loader_class,
+                loader_class=utils.MakeDataset,
+            )
+            self.dataloader[str(self.round_number)] = loader
+
+        # Logging progress
+        if self.logger is not None:
+            _make_checkpoint_sr(self, init=True)
+
+    def _fwd_pass_generator(self, obs):
+        return self.generator(obs)
+
+    def _calc_loss(self, theta_fake, theta):
+        return self.scoring_rule(theta_fake, theta)
+
+    def _update_generator(self, theta, obs):
+        # Zero gradients
+        self.generator_optim.zero_grad()
+
+        # Prepare data
+        obs = obs.to(self.device)
+        # generate the fake values of theta. Notice that here we generate multiple for each obs.
+        theta_fake = self._fwd_pass_generator(obs)
+
+        # Loss and backward
+        loss_val = self._calc_loss(theta_fake, theta)
+        loss_val.backward(retain_graph=False)
+
+        # Update parameters
+        self.generator_optim.step()
+
+    def _data_iterator(self, iter_limit):
+        if not self.reuse_samples:
+            dataloader = self.dataloader[str(self.round_number)]
+            return [
+                (i, theta, obs, self.round_number)
+                for i, (_, (theta, obs)) in enumerate(dataloader)
+                if i < iter_limit
+            ]
+        elif self.reuse_samples:
+            round_choice = np.random.choice(
+                range(self.round_number + 1), size=iter_limit, replace=True,
+            )
+            dataloaders = [
+                self.dataloader[str(k)] for k in range(self.round_number + 1)
+            ]
+            iterator = [
+                data for i, data in enumerate(zip(*dataloaders)) if i < iter_limit
+            ]
+            iterator2 = [(data[rnd], rnd) for data, rnd in zip(iterator, round_choice)]
+            iterator3 = [
+                (i, dat[1][0], dat[1][1], rnd)
+                for (i, (dat, rnd)) in enumerate(iterator2)
+            ]
+            return iterator3
+
+    def train(self, epochs: int, log_freq: Optional[int] = 1000) -> None:
+        """
+        Train Gen-SR.
+
+        Args:
+            epochs: number of training epochs.
+            log_freq: frequency at which to checkpoint.
+        """
+        stop_training = False
+        epoch = 0
+        while not stop_training and (epoch < epochs):
+            epoch += 1
+            self.epoch_ct += 1
+
+            # Train generator
+            for (i, theta, obs, rnd) in self._data_iterator(1):  # one single iteration per epoch
+                self.sample_from_round = rnd
+                tic = time()
+                self._update_generator(theta, obs)
+                print("Time", time() - tic)
+            torch.cuda.empty_cache()
+
+            # Log metrics and stop training
+            if (self.epoch_ct % log_freq == 0) or (epoch == epochs):
+                print("Logging metrics")
+                _log_metrics_sr(self)
+                if self.logger is not None:
+                    _make_checkpoint_sr(self, init=False)
+
+                # stop_training = _stop_training(self) # todo add early stopping via test loss monitoring.

@@ -57,6 +57,41 @@ def _make_checkpoint(opt, init):
         )
 
 
+def _make_checkpoint_sr(opt, init):
+    """
+    Save network and optimiser state dictionaries as checkpoint.
+
+    Args:
+        opt: Optimize object
+        init: Set to True if checkpoint is to be made before training
+    """
+    checkpoint = {
+        "epoch": opt.epoch_ct,
+        "generator_state_dict": opt.generator.state_dict(),
+        "gen_optimizer_state_dict": opt.generator_optim.state_dict(),
+    }
+    init_str = str(opt.round_number)
+    if init:
+        init_str = "_init"
+    torch.save(checkpoint, join(opt.logger.dir, "checkpoint_models%s.pt" % init_str))
+
+    if hasattr(opt, "classifier_theta"):
+        torch.save(
+            opt.classifier_theta,
+            join(opt.logger.dir, "classifier_theta%s.pt" % opt.round_number),
+        )
+    if hasattr(opt, "classifier_obs"):
+        torch.save(
+            opt.classifier_obs,
+            join(opt.logger.dir, "classifier_obs%s.pt" % opt.round_number),
+        )
+    if opt.training_opts.log_dataloader:
+        torch.save(
+            opt.dataloader,
+            join(opt.logger.dir, "checkpoint_dataloader%s.pt" % init_str),
+        )
+
+
 def _log_metrics(opt):
     """
     Log metrics and figures.
@@ -109,6 +144,47 @@ def _log_metrics(opt):
     torch.cuda.empty_cache()
     opt.generator.train()
     opt.discriminator.train()
+
+    # Update logger
+    if opt.logger is not None:
+        opt.logger.history.add(dict(opt.df.loc[opt.logger.step]))
+
+
+def _log_metrics_sr(opt):
+    """
+    Log metrics and figures.
+
+    Args:
+        opt: Optimize object.
+    """
+    # Make data
+    dataloader = opt.dataloader[str(opt.round_number)]
+    theta_test, obs_test = dataloader.dataset.inputs_test
+    theta_test = theta_test.to(opt.device)
+    obs_test = obs_test.to(opt.device)
+
+    opt.generator.eval()
+    theta_fake_cv = opt._fwd_pass_generator(obs_test)
+    # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
+
+    loss_gen = opt.scoring_rule(theta_fake_cv, theta_test)
+
+    loss_gen.backward(retain_graph=True)
+
+    gen_grads = torch.sqrt(
+        sum([torch.norm(p.grad) ** 2 for p in opt.generator.parameters()])
+    )
+    if opt.logger is not None:
+        step = opt.logger.step
+    else:
+        step = len(opt.df)
+    opt.df.loc[step] = {
+        "gen_loss": loss_gen.mean().item(),
+        "gen_grad": gen_grads.item(),
+        "global_step": opt.epoch_ct,
+    }
+    torch.cuda.empty_cache()
+    opt.generator.train()
 
     # Update logger
     if opt.logger is not None:

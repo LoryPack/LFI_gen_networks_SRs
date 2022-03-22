@@ -9,7 +9,8 @@ from gatsbi.optimize.base import Base
 from gatsbi.optimize.utils import (_log_metrics, _make_checkpoint,
                                    _stop_training)
 
-
+# This is an inproved way to train the generator: https://jonathan-hui.medium.com/gan-unrolled-gan-how-to-reduce-mode-collapse-af5f2f7b51cd
+# They use it for the shallow water model
 class UnrolledOpt(Base):
     """Unrolled GAN implementation."""
 

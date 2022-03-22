@@ -5,10 +5,11 @@ import torch
 import torch.nn as nn
 from torch.distributions.multivariate_normal import MultivariateNormal as MvN
 
-from gatsbi.networks.base import BaseNetwork
+from gatsbi.networks.base import BaseNetwork, WrapGenMultipleSimulations
 from gatsbi.networks.models import Discriminator
 from gatsbi.networks.modules import AddNoise
 from gatsbi.optimize import Base as Optimize
+from gatsbi.optimize import BaseSR as OptimizeSR
 from gatsbi.optimize import UnrolledOpt
 
 
@@ -52,6 +53,40 @@ class TestBaseOptimiser(unittest.TestCase):
             _simulator,
             [gen_opt_args, dis_opt_args],
             loss=loss,
+            training_opts=training_opts,
+        )
+        opt.train(epochs=2)
+        self.assertEqual(opt.epoch_ct, 2)
+
+
+class TestBaseSROptimiser(unittest.TestCase):
+    """Test setup and training pass through base optimiser."""
+
+    def test_base_optimizer_training_iteration(self):
+        """Test setup and 2 epochs of updates through optimiser."""
+        gen = BaseNetwork([nn.Linear(10, 10), AddNoise(10, 10), nn.LeakyReLU()])
+        gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=3)
+
+        fake_obs = torch.randn(10)
+        # test generation
+        print(gen_wrapped(fake_obs).shape)
+
+        gen_opt_args = [0.0001, (0.5, 0.99)]
+
+        scoring_rule = "energy_score"
+        training_opts = {
+            "num_simulations": 20,
+            "sample_seed": 42,
+            "hold_out": 1,
+            "batch_size": 10,
+        }
+
+        opt = OptimizeSR(
+            gen_wrapped,
+            _prior,
+            _simulator,
+            [gen_opt_args],
+            scoring_rule=scoring_rule,
             training_opts=training_opts,
         )
         opt.train(epochs=2)

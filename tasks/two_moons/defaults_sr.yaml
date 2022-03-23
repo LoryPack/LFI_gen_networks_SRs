@@ -22,6 +22,5 @@ gen_opt_args:
 gen_seed: None
 hold_out: 100
 scoring_rule: energy_score
-num_simulations: 10000
 sample_seed: None
 stop_thresh: 0.001

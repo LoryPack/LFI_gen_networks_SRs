@@ -31,7 +31,7 @@ def main(args):
 
     # Make a logger
     print("Making logger")
-    makedirs(join("..", "runs", args.task_name), exist_ok=True)
+    makedirs(join("results", args.task_name), exist_ok=True)
     wandb.init(
         project=args.project_name,
         group=args.group_name,
@@ -39,7 +39,7 @@ def main(args):
         resume=args.resume,
         config=defaults,
         notes="",
-        dir=join("..", "runs", args.task_name),
+        dir=join("results", args.task_name)
     )
     config = NSp(**wandb.config)
 
@@ -56,13 +56,13 @@ def main(args):
 
         start = 0
         epochs_per_round = [args.epochs]
-        budget_per_round = [config.num_simulations]
+        budget_per_round = [args.num_training_simulations]
         seq_impwts = "impwts"
 
         if "seq" in args.task_name:
             # number of simulations should be equal to budget per round;
             # length of budget list and epoch list = number of rounds
-            assert config.num_simulations >= sum(config.budget_per_round)
+            assert args.num_training_simulations >= sum(config.budget_per_round)
             assert len(config.budget_per_round) == len(config.epochs_per_round)
 
             start = config.start_with_rnd
@@ -145,7 +145,7 @@ def main(args):
                 gen.cuda()
 
             # wrap the generator to use the SR method
-            gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=args.n_simulations)
+            gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=args.num_simulations_generator)
 
             # Make optimiser
             print("Make optimiser")
@@ -195,7 +195,7 @@ def main(args):
                     [config.gen_opt_args],
                     scoring_rule=config.scoring_rule,
                     training_opts={
-                        "num_simulations": config.num_simulations,
+                        "num_simulations": args.num_training_simulations,
                         "sample_seed": config.sample_seed,
                         "hold_out": config.hold_out,
                         "batch_size": batch_size,
@@ -235,7 +235,8 @@ if __name__ == "__main__":
     parser.add_argument("--task_name", type=str)
     parser.add_argument("--group_name", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=20000)
-    parser.add_argument("--n_simulations", type=int, default=3)
+    parser.add_argument("--num_training_simulations", type=int, default=10000)
+    parser.add_argument("--num_simulations_generator", type=int, default=3)
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--run_id", type=str, default=None)
     parser.add_argument("--resume_dir", type=str, default=None)

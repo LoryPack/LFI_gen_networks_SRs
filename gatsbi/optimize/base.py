@@ -7,7 +7,7 @@ import pandas
 import torch
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
-
+from tqdm import tqdm
 import gatsbi.utils as utils
 from gatsbi.networks import BaseNetwork, Discriminator, Generator
 
@@ -438,9 +438,7 @@ class BaseSR:
             epochs: number of training epochs.
             log_freq: frequency at which to checkpoint.
         """
-        stop_training = False
-        epoch = 0
-        while not stop_training and (epoch < epochs):
+        for epoch in tqdm(range(epochs)):
             epoch += 1
             self.epoch_ct += 1
 
@@ -449,14 +447,15 @@ class BaseSR:
                 self.sample_from_round = rnd
                 tic = time()
                 self._update_generator(theta, obs)
-                print("Time", time() - tic)
+                # print("Time", time() - tic)
             torch.cuda.empty_cache()
 
             # Log metrics and stop training
             if (self.epoch_ct % log_freq == 0) or (epoch == epochs):
-                print("Logging metrics")
+                # print("Logging metrics")
                 _log_metrics_sr(self)
                 if self.logger is not None:
                     _make_checkpoint_sr(self, init=False)
 
-                # stop_training = _stop_training(self) # todo add early stopping via test loss monitoring.
+                # if _stop_training(self): # todo add early stopping via test loss monitoring.
+                #     break

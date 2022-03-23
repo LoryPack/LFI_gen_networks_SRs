@@ -28,6 +28,5 @@ hold_out: 100
 scoring_rule: energy_score
 net_type: "mlp"
 # net_type: "nsf"
-num_simulations: 10000
 sample_seed: None
 stop_thresh: 0.001

@@ -68,8 +68,6 @@ class TestBaseSROptimiser(unittest.TestCase):
         gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=3)
 
         fake_obs = torch.randn(10)
-        # test generation
-        print(gen_wrapped(fake_obs).shape)
 
         gen_opt_args = [0.0001, (0.5, 0.99)]
 

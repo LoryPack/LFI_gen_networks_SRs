@@ -57,7 +57,7 @@ class WrapGenMultipleSimulations(nn.Module):
             Shape is therefore [batch, n_simulations, out_size].
         """
 
-        outputs = [self.net(_input)] * self.n_simulations
+        outputs = [self.net(_input) for i in range(self.n_simulations)]
 
         # stack along the second dimension and add a last dimension if missing.
         return torch.atleast_3d(torch.stack(outputs, dim=1))

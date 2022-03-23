@@ -39,7 +39,8 @@ def main(args):
         resume=args.resume,
         config=defaults,
         notes="",
-        dir=join("results", args.task_name)
+        dir=join("results", args.task_name),
+        name=args.task_name + "_" + str(args.num_training_simulations)
     )
     config = NSp(**wandb.config)
 
@@ -74,7 +75,7 @@ def main(args):
                 epochs_per_round[start] = args.epochs
 
         for rnd, (epochs, budget) in enumerate(
-            zip(epochs_per_round[start:], budget_per_round[start:]), start=start
+                zip(epochs_per_round[start:], budget_per_round[start:]), start=start
         ):
 
             # Make proposal, generator and discriminator
@@ -219,7 +220,7 @@ def main(args):
                 seq_impwts=seq_impwts,
                 lat_dist=opt.lat_dist,
                 save_dir=opt.logger.dir,
-                cuda = not args.no_cuda
+                cuda=not args.no_cuda
             )
             print("round", rnd)
             if rnd > 0:

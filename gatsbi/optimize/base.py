@@ -438,7 +438,7 @@ class BaseSR:
             epochs: number of training epochs.
             log_freq: frequency at which to checkpoint.
         """
-        for epoch in tqdm(range(epochs)):
+        for epoch in tqdm(range(epochs), ascii=True):
             epoch += 1
             self.epoch_ct += 1
 

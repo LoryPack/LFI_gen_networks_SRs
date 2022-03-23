@@ -22,7 +22,8 @@ def main(args):
     args, unknown_args = args
 
     # Get defaults
-    with open(join("tasks", args.task_name, "defaults_sr.yaml"), "r") as f:
+    yamlname = "defaults_opt_sr.yaml" if args.opt else "defaults_sr.yaml"
+    with open(join("tasks", args.task_name, yamlname), "r") as f:
         defaults = yaml.load(f, Loader=yaml.Loader)
 
     # Update defaults
@@ -40,7 +41,8 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + str(args.num_training_simulations)
+        name=args.task_name + "_" + str(args.num_training_simulations) + "_" + str(args.num_simulations_generator) + (
+            "_opt" if args.opt else "")
     )
     config = NSp(**wandb.config)
 
@@ -242,4 +244,5 @@ if __name__ == "__main__":
     parser.add_argument("--run_id", type=str, default=None)
     parser.add_argument("--resume_dir", type=str, default=None)
     parser.add_argument("--no_cuda", action="store_true")
+    parser.add_argument("--opt", action="store_true")
     main(parser.parse_known_args())

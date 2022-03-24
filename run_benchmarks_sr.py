@@ -140,7 +140,7 @@ def main(args):
                 training_opts={
                     "num_simulations": args.num_training_simulations,
                     "sample_seed": config.sample_seed,
-                    "hold_out": config.hold_out,
+                    "hold_out": int(config.hold_out_perc * args.num_training_simulations),
                     "batch_size": batch_size,
                     "log_dataloader": True,
                     "stop_thresh": config.stop_thresh,

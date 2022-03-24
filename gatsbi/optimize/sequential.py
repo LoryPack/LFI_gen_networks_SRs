@@ -6,7 +6,7 @@ from pyro.distributions import MultivariateNormal as MvN
 from pyro.distributions.rejector import Rejector
 from pyro.infer.mcmc import HMC, MCMC
 
-from gatsbi.optimize.base import Base
+from gatsbi.optimize.base import Base, BaseSR
 from gatsbi.optimize.utils import _check_data_bank
 from gatsbi.utils import Classifier
 
@@ -276,3 +276,107 @@ class SequentialOpt(Base):
 
         # generator forward pass
         return self.generator([z_samples, obs])
+
+
+# NOTICE: this is incomplete, I have not implemented for now
+class SequentialOptSR(SequentialOpt, BaseSR):
+    """Sequential GAN training with importance weights correction."""
+
+    def __init__(
+        self,
+        seq_type: str,
+        classifier_theta: Optional[Classifier] = None,
+        classifier_obs: Optional[Classifier] = None,
+        classifier_theta_kwargs: Optional[dict] = {},
+        classifier_obs_kwargs: Optional[dict] = {},
+        latent_distribution: Optional[Callable] = None,
+        lat_dim: Optional[int] = None,
+        **kwargs
+    ) -> None:
+        """
+        Set up sequential optimiser.
+
+        Args:
+            seq_type: 'impwts' for importance weights correction, 'invimpwts'
+                       for inverse important weights correction, 'ebm_mcmc'
+                       for EBM correction with MCMC sampling, 'ebm_rej' for
+                       EBM correction with rejection sampling.
+            classifier_theta: trained classifier in theta space. If None, a
+                              classifier will be created from
+                              `classifier_theta_kwargs` and trained before
+                              GAN training commences.
+            classifier_obs: trained classifier in observation space. If None,
+                            a classifier will be created from
+                            `classifier_obs_kwargs` and trained before
+                            GAN training commences.
+            classifier_theta_kwargs: dictionary of arguments for input to
+                                     classifier for theta samples. See
+                                     Classifier docs for more information.
+            classifier_obs_kwargs: dictionary of arguments for input to
+                                   classifier for observations from simulator.
+                                   See Classifier docs for more information.
+            latent_distribution: pyro.distributions object, distribution for
+                                 sampling latent variables. If None, defaults
+                                 to standard multivariate Gaussian.
+            lat_dim: number of latent dimensions. Must have integer input if
+                     input to latent_distribution is None.
+            **kwargs: arguments for Base optimiser. See
+                      gatsbi.optimize.base.Base docs for more information.
+            NOTE: if round_number > 1, input `prior` should be the proposal
+                  prior i.e. prior for the corrent round;
+                  training_opts.num_simulations should be simulation for the
+                  current round
+        """
+        BaseSR.__init__(self, **kwargs)
+        self.seq_type = seq_type
+        self.classifier_theta = classifier_theta
+        self.classifier_obs = classifier_obs
+        self.classifier_theta_kwargs = classifier_theta_kwargs
+        self.classifier_obs_kwargs = classifier_obs_kwargs
+        self.lat_dist = latent_distribution
+        self.lat_dim = lat_dim
+
+        if "ebm" in self.seq_type:
+            self._make_latent_distribution()
+            if "mcmc" in self.seq_type:
+                self.generator.float()
+                assert hasattr(self.training_opts, "warmup_steps")
+            elif "rej" in self.seq_type:
+                assert (
+                    hasattr(self.training_opts, "num_particles")
+                    and self.training_opts.num_particles > 1
+                )
+
+        # If round number is > 0, samples from first round should already be
+        # in self.dataloader
+        if self.round_number > 0:
+            assert _check_data_bank(self.round_number - 1, self.dataloader)
+            if self.classifier_theta is None:
+                print("Training theta classifier")
+                self.classifier_theta = self._train_classifier("theta")
+            if self.classifier_obs is None:
+                print("Training obs classifier")
+                self.classifier_obs = self._train_classifier("x")
+
+    # -------------------------------------------------------------------------------------------------
+    # Functions modifying loss for explicit correction factor
+
+    def _calc_loss(self, theta_fake, theta):
+        # Revert to Base optimiser if round number is 0 or for EBM correction
+        if (self.sample_from_round == 0) or ("ebm" in self.seq_type):
+            return BaseSR._calc_loss(theta_fake, theta)
+
+        # todo fix this! to compute the loss in correct way
+        d_fake, d_real = self.discriminator([theta_fake, obs]), None
+        correction0, correction1 = 1.0, 1.0
+
+        if theta is not None:
+            d_real = self.discriminator([theta, obs])
+            if self.seq_type == "impwts":
+                correction0 = self._correction_factor(theta, obs)
+
+        if self.seq_type == "invimpwts":
+            correction1 = self._correction_factor(theta_fake, obs)
+        # todo this may need some thinking!
+        return self.loss(d_fake, d_real, [-correction0, -correction1]).mean()
+

@@ -1,3 +1,3 @@
 from .base import Base, BaseSR
-from .sequential import SequentialOpt
+from .sequential import SequentialOpt, SequentialOptSR
 from .unrolled import UnrolledOpt

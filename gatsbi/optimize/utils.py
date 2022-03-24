@@ -150,9 +150,9 @@ def _log_metrics(opt):
         opt.logger.log(dict(opt.df.loc[opt.logger.step]))
 
 
-def _log_metrics_sr(opt):
+def _log_metrics_sr(opt, batch_size=1000):
     """
-    Log metrics and figures.
+    Log metrics and figures. Also do early stopping if needed
 
     Args:
         opt: Optimize object.
@@ -164,12 +164,21 @@ def _log_metrics_sr(opt):
     obs_test = obs_test.to(opt.device)
 
     opt.generator.eval()
-    theta_fake_cv = opt._fwd_pass_generator(obs_test)
-    # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
 
-    loss_gen = opt.scoring_rule(theta_fake_cv, theta_test)
+    # do this in batches:
+    loss_gen = 0
+    batch_id = 0
+    n_test_samples = obs_test.shape[0]
+    while batch_size * batch_id < n_test_samples:
+        theta_fake_cv = opt._fwd_pass_generator(obs_test[batch_size * batch_id:batch_size * (batch_id + 1)])
+        # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
 
-    loss_gen.backward(retain_graph=True)
+        loss_gen += opt.scoring_rule(theta_fake_cv, theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
+        batch_id += 1
+
+    loss_gen /= batch_id
+
+    loss_gen.backward(retain_graph=False)
 
     gen_grads = torch.sqrt(
         sum([torch.norm(p.grad) ** 2 for p in opt.generator.parameters()])
@@ -190,6 +199,7 @@ def _log_metrics_sr(opt):
     if opt.logger is not None:
         opt.logger.log(dict(opt.df.loc[opt.logger.step]))
 
+    return loss_gen
 
 def _stop_training(opt):
     """

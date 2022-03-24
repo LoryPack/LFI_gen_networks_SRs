@@ -154,7 +154,7 @@ def main(args):
 
             # Train model
             print("Training")
-            opt.train(epochs, 100)
+            opt.train(epochs, 100, start_early_stopping_after_epoch=1000)
 
             make_results = MakeResults(
                 generator=gen,

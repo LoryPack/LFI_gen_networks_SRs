@@ -430,7 +430,7 @@ class BaseSR:
             ]
             return iterator3
 
-    def train(self, epochs: int, log_freq: Optional[int] = 1000) -> None:
+    def train(self, epochs: int, log_freq: Optional[int] = 1000, start_early_stopping_after_epoch=1000) -> None:
         """
         Train Gen-SR.
 
@@ -438,14 +438,14 @@ class BaseSR:
             epochs: number of training epochs.
             log_freq: frequency at which to checkpoint.
         """
+        test_loss_list = []
         for epoch in tqdm(range(epochs), ascii=True):
-            epoch += 1
             self.epoch_ct += 1
 
             # Train generator
             for (i, theta, obs, rnd) in self._data_iterator(1):  # one single iteration per epoch
                 self.sample_from_round = rnd
-                tic = time()
+                # tic = time()
                 self._update_generator(theta, obs)
                 # print("Time", time() - tic)
             torch.cuda.empty_cache()
@@ -453,9 +453,12 @@ class BaseSR:
             # Log metrics and stop training
             if (self.epoch_ct % log_freq == 0) or (epoch == epochs):
                 # print("Logging metrics")
-                _log_metrics_sr(self)
+                test_loss = _log_metrics_sr(self, batch_size=self.training_opts.batch_size)
+                test_loss_list.append(test_loss)
                 if self.logger is not None:
                     _make_checkpoint_sr(self, init=False)
-
-                # if _stop_training(self): # todo add early stopping via test loss monitoring.
-                #     break
+                if len(test_loss_list) > 1 and self.epoch_ct >= start_early_stopping_after_epoch:
+                    if test_loss_list[-2] < test_loss_list[-1]:
+                        # stop training
+                        print("Early stopped at epoch", epoch)
+                        break

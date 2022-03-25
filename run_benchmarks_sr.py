@@ -25,9 +25,15 @@ def main(args):
     with open(join("tasks", args.task_name, yamlname), "r") as f:
         defaults = yaml.load(f, Loader=yaml.Loader)
 
+    # Add arguments to defaults
+    defaults["scoring_rule"] = args.scoring_rule
+    defaults["epochs"] = args.epochs
+    defaults["num_training_simulations"] = args.num_training_simulations
+    defaults["num_simulations_generator"] = args.num_simulations_generator
+
     # Update defaults
     if len(unknown_args) > 0:
-        defaults = _update_defaults(defaults)
+        defaults = _update_defaults(defaults)  # could add other arguments to the defaults
 
     # Make a logger
     print("Making logger")
@@ -40,7 +46,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + str(args.num_training_simulations) + "_" + str(args.num_simulations_generator) + (
+        name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_training_simulations) + "_" + str(args.num_simulations_generator) + (
             "_opt" if args.opt else "")
     )
     config = NSp(**wandb.config)
@@ -136,7 +142,7 @@ def main(args):
                 prior,
                 simulator,
                 [config.gen_opt_args],
-                scoring_rule=config.scoring_rule,
+                scoring_rule=args.scoring_rule,
                 training_opts={
                     "num_simulations": args.num_training_simulations,
                     "sample_seed": config.sample_seed,
@@ -176,6 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--project_name", type=str)
     parser.add_argument("--task_name", type=str)
     parser.add_argument("--group_name", type=str, default=None)
+    parser.add_argument("--scoring_rule", type=str, default="energy_score", choices=["energy_score", "kernel_score"])
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--num_training_simulations", type=int, default=10000)
     parser.add_argument("--num_simulations_generator", type=int, default=3)

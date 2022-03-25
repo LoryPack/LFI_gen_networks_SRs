@@ -70,6 +70,8 @@ def _make_checkpoint_sr(opt, init):
         "generator_state_dict": opt.generator.state_dict(),
         "gen_optimizer_state_dict": opt.generator_optim.state_dict(),
     }
+    if hasattr(opt, "kernel_bandwidth"):
+        checkpoint["kernel_bandwidth"] = opt.kernel_bandwidth
     init_str = str(opt.round_number)
     if init:
         init_str = "_init"
@@ -173,7 +175,7 @@ def _log_metrics_sr(opt, batch_size=1000):
         theta_fake_cv = opt._fwd_pass_generator(obs_test[batch_size * batch_id:batch_size * (batch_id + 1)])
         # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
 
-        loss_gen += opt.scoring_rule(theta_fake_cv, theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
+        loss_gen += opt.scoring_rule.estimate_score_batch(theta_fake_cv, theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
         batch_id += 1
 
     loss_gen /= batch_id
@@ -200,6 +202,7 @@ def _log_metrics_sr(opt, batch_size=1000):
         opt.logger.log(dict(opt.df.loc[opt.logger.step]))
 
     return loss_gen
+
 
 def _stop_training(opt):
     """
@@ -267,3 +270,22 @@ def _stop_training(opt):
         if opt.round_number < 1:
             return True
     return False
+
+
+def estimate_bandwidth(parameters, return_values=["median"]):
+    """Estimate the bandwidth for the` gaussian kernel in KernelSR. parameters has shape ["batch", "theta_size"] and
+    return_values is a list of strings."""
+    batch_size, theta_size = parameters.shape
+    if batch_size in [0, 1]:
+        raise RuntimeError("Batch size is either 0 or 1, so cannot estimate bandwidth")
+    distances = torch.cdist(parameters, parameters)
+    # discard the diagonal elements, as they are 0:
+    distances = distances[~torch.eye(batch_size, dtype=bool)].flatten()
+
+    return_list = []
+    if "median" in return_values:
+        return_list.append(torch.median(distances))
+    if "mean" in return_values:
+        return_list.append(torch.mean(distances))
+
+    return return_list[0] if len(return_list) == 1 else return_list

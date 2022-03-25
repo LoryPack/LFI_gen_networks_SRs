@@ -62,12 +62,10 @@ class TestBaseOptimiser(unittest.TestCase):
 class TestBaseSROptimiser(unittest.TestCase):
     """Test setup and training pass through base optimiser."""
 
-    def test_base_optimizer_training_iteration(self):
+    def test_base_optimizer_energy_score(self):
         """Test setup and 2 epochs of updates through optimiser."""
         gen = BaseNetwork([nn.Linear(10, 10), AddNoise(10, 10), nn.LeakyReLU()])
         gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=3)
-
-        fake_obs = torch.randn(10)
 
         gen_opt_args = [0.0001, (0.5, 0.99)]
 
@@ -86,9 +84,63 @@ class TestBaseSROptimiser(unittest.TestCase):
             [gen_opt_args],
             scoring_rule=scoring_rule,
             training_opts=training_opts,
+            sr_kwargs={"beta": 1.2},
         )
         opt.train(epochs=2)
         self.assertEqual(opt.epoch_ct, 2)
+
+    def test_base_optimizer_kernel_score(self):
+        """Test setup and 2 epochs of updates through optimiser."""
+        gen = BaseNetwork([nn.Linear(10, 10), AddNoise(10, 10), nn.LeakyReLU()])
+        gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=3)
+
+        gen_opt_args = [0.0001, (0.5, 0.99)]
+
+        scoring_rule = "kernel_score"
+        training_opts = {
+            "num_simulations": 20,
+            "sample_seed": 42,
+            "hold_out": 2,
+            "batch_size": 10,
+        }
+
+        opt = OptimizeSR(
+            gen_wrapped,
+            _prior,
+            _simulator,
+            [gen_opt_args],
+            scoring_rule=scoring_rule,
+            training_opts=training_opts,
+        )
+        self.assertTrue(hasattr(opt, "kernel_bandwidth"))
+        opt.train(epochs=2)
+        self.assertEqual(opt.epoch_ct, 2)
+
+    def test_base_optimizer_kernel_score_bandwidth_error(self):
+        """Test when you do not have hold_out samples to estimate bandwidth."""
+        gen = BaseNetwork([nn.Linear(10, 10), AddNoise(10, 10), nn.LeakyReLU()])
+        gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=3)
+
+        gen_opt_args = [0.0001, (0.5, 0.99)]
+
+        scoring_rule = "kernel_score"
+
+        training_opts = {
+            "num_simulations": 20,
+            "sample_seed": 42,
+            "hold_out": 0,
+            "batch_size": 10,
+        }
+
+        with self.assertRaises(RuntimeError):
+            opt = OptimizeSR(
+                gen_wrapped,
+                _prior,
+                _simulator,
+                [gen_opt_args],
+                scoring_rule=scoring_rule,
+                training_opts=training_opts,
+            )
 
 
 class TestUnrolledGANOpt(unittest.TestCase):

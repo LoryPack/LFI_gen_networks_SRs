@@ -358,14 +358,3 @@ class KernelScore(ScoringRule):
         return t_sim_sim - t_obs_sim
 
     # todo speed up by reciclying previous computations of 2. / ensemble_size and similar?
-
-
-def energy_score(forecast, verification):
-    return EnergyScore().estimate_score_batch(forecast, verification)
-
-
-def kernel_score(forecast, verification):
-    return KernelScore().estimate_score_batch(forecast, verification)
-
-
-sr_dict = {"energy_score": energy_score, "kernel_score": kernel_score}

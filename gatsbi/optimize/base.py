@@ -12,35 +12,36 @@ import gatsbi.utils as utils
 from gatsbi.networks import BaseNetwork, Discriminator, Generator
 
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
-                    _stop_training, _log_metrics_sr, _make_checkpoint_sr)
+                    _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth)
+from ..utils import EnergyScore, KernelScore
 
 
 class Base:
     """Base class for amortised GATSBI training."""
 
     def __init__(
-        self,
-        generator: BaseNetwork or Generator,
-        discriminator: Discriminator,
-        prior: Callable,
-        simulator: Callable,
-        optim_args: Tuple[float, Tuple[float, float]],
-        dataloader: Optional[dict] = dict(),
-        loss: Optional[str] = "cross_entropy",
-        round_number: Optional[int] = 0,
-        reuse_samples: Optional[bool] = False,
-        training_opts: Optional[dict] = dict(
-            gen_iter=1,
-            dis_iter=1,
-            max_norm_gen=np.inf,
-            max_norm_dis=np.inf,
-            num_simulations=1000,
-            sample_seed=42,
-            hold_out=100,
-            batch_size=1000,
-            log_dataloader=True,
-        ),
-        logger: Optional[Callable] = None,
+            self,
+            generator: BaseNetwork or Generator,
+            discriminator: Discriminator,
+            prior: Callable,
+            simulator: Callable,
+            optim_args: Tuple[float, Tuple[float, float]],
+            dataloader: Optional[dict] = dict(),
+            loss: Optional[str] = "cross_entropy",
+            round_number: Optional[int] = 0,
+            reuse_samples: Optional[bool] = False,
+            training_opts: Optional[dict] = dict(
+                gen_iter=1,
+                dis_iter=1,
+                max_norm_gen=np.inf,
+                max_norm_dis=np.inf,
+                num_simulations=1000,
+                sample_seed=42,
+                hold_out=100,
+                batch_size=1000,
+                log_dataloader=True,
+            ),
+            logger: Optional[Callable] = None,
     ) -> None:
         """
         Set up base class for amortised GATSBI training.
@@ -245,7 +246,7 @@ class Base:
 
             # Train discriminator
             for (i, theta, obs, rnd) in self._data_iterator(
-                self.training_opts.dis_iter
+                    self.training_opts.dis_iter
             ):
                 print("Dis iter %d" % i, rnd)
                 self.sample_from_round = rnd
@@ -277,23 +278,24 @@ class BaseSR:
     """Base class for amortised GATSBI training."""
 
     def __init__(
-        self,
-        generator: BaseNetwork or Generator,
-        prior: Callable,
-        simulator: Callable,
-        optim_args: Tuple[float, Tuple[float, float]],
-        dataloader: Optional[dict] = dict(),
-        scoring_rule: Optional[str] = "energy_score",
-        round_number: Optional[int] = 0,
-        reuse_samples: Optional[bool] = False,
-        training_opts: Optional[dict] = dict(
-            num_simulations=1000,
-            sample_seed=42,
-            hold_out=100,
-            batch_size=1000,
-            log_dataloader=True,
-        ),
-        logger: Optional[Callable] = None,
+            self,
+            generator: BaseNetwork or Generator,
+            prior: Callable,
+            simulator: Callable,
+            optim_args: Tuple[float, Tuple[float, float]],
+            dataloader: Optional[dict] = dict(),
+            scoring_rule: Optional[str] = "energy_score",
+            round_number: Optional[int] = 0,
+            reuse_samples: Optional[bool] = False,
+            training_opts: Optional[dict] = dict(
+                num_simulations=1000,
+                sample_seed=42,
+                hold_out=100,
+                batch_size=1000,
+                log_dataloader=True,
+            ),
+            logger: Optional[Callable] = None,
+            sr_kwargs: Optional[dict] = dict(),
     ) -> None:
         """
         Set up base class for amortised GATSBI training.
@@ -325,6 +327,7 @@ class BaseSR:
                 batch_size (int): batch size for gradient descent.
             logger: wandb.run object for logging data. If None, data is not
                     logged.
+            sr_kwargs: keyword arguments for Scoring Rule (see gatsbi.utils.sr_utils.SR)
         """
         # Set constants
         self.epoch_ct = 0
@@ -347,7 +350,6 @@ class BaseSR:
         self.prior = prior
 
         self.dataloader = dataloader
-        self.scoring_rule = getattr(utils, scoring_rule)
         self.logger = logger
 
         # Initialise optimisers
@@ -379,6 +381,28 @@ class BaseSR:
             )
             self.dataloader[str(self.round_number)] = loader
 
+        # instantiate scoring rule
+        if scoring_rule == "energy_score":
+            self.scoring_rule = EnergyScore(**sr_kwargs)
+        elif scoring_rule == "kernel_score":
+            # we set here round_number=0. This means we use prior samples to set bandwidth even in the sequential
+            # approaches. However need to think better about it, as we do not use them right now
+            if training_opts["hold_out"] == 0:
+                raise RuntimeError("No hold out samples, so it is impossible to set bandwidth")
+            theta_test, _ = self.dataloader[str(0)].dataset.inputs_test
+            self.kernel_bandwidth = estimate_bandwidth(theta_test)
+            self.scoring_rule = KernelScore(sigma=self.kernel_bandwidth, **sr_kwargs)
+            # save the kernel bandwidth in the logger
+            if self.logger is not None:
+                self.logger.log(
+                    {
+                        "kernel_bandwidth": self.kernel_bandwidth,
+                    }
+                )
+
+        else:
+            raise ValueError("scoring_rule must be 'energy_score' or 'kernel_score'")
+
         # Logging progress
         if self.logger is not None:
             _make_checkpoint_sr(self, init=True)
@@ -387,7 +411,7 @@ class BaseSR:
         return self.generator(obs)
 
     def _calc_loss(self, theta_fake, theta):
-        return self.scoring_rule(theta_fake, theta)
+        return self.scoring_rule.estimate_score_batch(theta_fake, theta)
 
     def _update_generator(self, theta, obs):
         # Zero gradients
@@ -462,3 +486,5 @@ class BaseSR:
                         # stop training
                         print("Early stopped at epoch", epoch)
                         break
+
+        self.logger.log({"early_stop_at_epoch": epoch})

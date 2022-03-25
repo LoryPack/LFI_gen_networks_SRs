@@ -4,6 +4,8 @@ from time import time
 import numpy as np
 import torch
 
+from gatsbi.networks.base import WrapGenMultipleSimulations
+
 
 def _sample(prior, simulator, sample_seed, num_samples):
     """Return samples from prior and simulator."""
@@ -65,9 +67,13 @@ def _make_checkpoint_sr(opt, init):
         opt: Optimize object
         init: Set to True if checkpoint is to be made before training
     """
+    if isinstance(opt.generator, WrapGenMultipleSimulations):
+        generator_state_dict = opt.generator.net.state_dict()
+    else:
+        generator_state_dict = opt.generator.state_dict()
     checkpoint = {
         "epoch": opt.epoch_ct,
-        "generator_state_dict": opt.generator.state_dict(),
+        "generator_state_dict": generator_state_dict,
         "gen_optimizer_state_dict": opt.generator_optim.state_dict(),
     }
     if hasattr(opt, "kernel_bandwidth"):

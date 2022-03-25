@@ -405,7 +405,7 @@ class BaseSR:
 
         # Logging progress
         if self.logger is not None:
-            _make_checkpoint_sr(self, init=True)
+            _make_checkpoint_sr(self, init=False)
 
     def _fwd_pass_generator(self, obs):
         return self.generator(obs)

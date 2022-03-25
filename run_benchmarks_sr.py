@@ -8,11 +8,9 @@ import torch
 import wandb
 import yaml
 
-import sbibm
-
 from gatsbi.networks.base import WrapGenMultipleSimulations
 from gatsbi.optimize import BaseSR as Opt
-from gatsbi.task_utils.benchmarks import (ProposalWrapper, load_generator,
+from gatsbi.task_utils.benchmarks import (load_generator,
                                           make_generator)
 from gatsbi.task_utils.benchmarks.make_results import MakeResults
 from gatsbi.task_utils.run_utils import _update_defaults
@@ -64,7 +62,6 @@ def main(args):
         epochs = args.epochs
         budget = args.num_training_simulations
 
-        print("Round {}".format(0))
         # Make proposal, generator and discriminator
         gen = make_generator(
             gen_seed=config.gen_seed,
@@ -144,9 +141,11 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--num_training_simulations", type=int, default=10000)
     parser.add_argument("--num_simulations_generator", type=int, default=3)
-    parser.add_argument("--resume", type=bool, default=False)
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--run_id", type=str, default=None)
-    parser.add_argument("--resume_dir", type=str, default=None)
+    parser.add_argument("--resume_dir", type=str, default=None,
+                        help="Needs to be something as 'results/two_moons/wandb/run-20220325_172124-28i1s9ik/files', "
+                             "where the part before 'files' is printed when training at the first round")
     parser.add_argument("--no_cuda", action="store_true")
     parser.add_argument("--opt", action="store_true")
     main(parser.parse_known_args())

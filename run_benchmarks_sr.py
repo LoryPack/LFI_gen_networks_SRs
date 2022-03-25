@@ -3,6 +3,7 @@ from argparse import Namespace as NSp
 from os import makedirs
 from os.path import join
 
+import sbibm
 import torch
 import wandb
 import yaml
@@ -60,120 +61,77 @@ def main(args):
         simulator = task.get_simulator()
         prior = task.get_prior()
 
-        start = 0
-        epochs_per_round = [args.epochs]
-        budget_per_round = [args.num_training_simulations]
+        epochs = args.epochs
+        budget = args.num_training_simulations
 
-        for rnd, (epochs, budget) in enumerate(
-                zip(epochs_per_round[start:], budget_per_round[start:]), start=start
-        ):
+        print("Round {}".format(0))
+        # Make proposal, generator and discriminator
+        gen = make_generator(
+            gen_seed=config.gen_seed,
+            **config.gen_network_kwargs
+        )
 
-            # Make proposal, generator and discriminator
-            gen = make_generator(
-                gen_seed=config.gen_seed,
-                **config.gen_network_kwargs
+        dataloader = {}
+
+        # Resume from previous state
+        if args.resume:
+            assert args.resume_dir is not None
+            res_chpt = torch.load(
+                join(args.resume_dir, "checkpoint_models%d.pt" % 0)
             )
+            gen = load_generator(res_chpt["generator_state_dict"],
+                                 gen)
 
-            dataloader = {}
-
-            # Resume from previous state
-            if args.resume:
-                assert args.resume_dir is not None
-                res_chpt = torch.load(
-                    join(args.resume_dir, "checkpoint_models%d.pt" % rnd)
-                )
-                gen = load_generator(res_chpt["generator_state_dict"],
-                                     gen)
-
-                dataloader = torch.load(
-                    join(args.resume_dir, "checkpoint_dataloader%d.pt" % rnd)
-                )
-                print("classifier dataloader")
-
-            # Make proposal prior
-            if rnd > 0:
-                if args.resume:
-                    classifier_theta = torch.load(
-                        join(args.resume_dir, "classifier_theta%d.pt" % rnd)
-                    )
-                    classifier_obs = torch.load(
-                        join(args.resume_dir, "classifier_obs%d.pt" % rnd)
-                    )
-                    directory = args.resume_dir
-                else:
-                    directory = run.dir
-                # Update prior -> proposal
-                prop = make_generator(
-                    gen_seed=config.gen_seed,
-                    **config.gen_network_kwargs
-                )
-                mdl_chpt = torch.load(
-                    join(directory, "checkpoint_models%d.pt" % (rnd - 1))
-                )
-                prop.load_state_dict(mdl_chpt["generator_state_dict"])
-                proposal = ProposalWrapper(
-                    prop,
-                    task.get_observation(config.obs_num),
-                    lat_dist=None,
-                    lat_dim=config.gen_network_kwargs["add_noise_kwargs"]["lat_dim"],
-                ).prior
-
-                prior = proposal
-
-                if not args.resume:
-                    # Get dataloader
-                    dataloader = torch.load(
-                        join(run.dir, "checkpoint_dataloader%d.pt" % (rnd - 1))
-                    )
-            # Move to GPU
-            if not args.no_cuda:
-                gen.cuda()
-
-            # wrap the generator to use the SR method
-            gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=args.num_simulations_generator)
-
-            # Make optimiser
-            print("Make optimiser")
-            batch_size = min(1000, int(config.batch_size_perc * budget))
-            lat_dim = config.gen_network_kwargs["add_noise_kwargs"]["lat_dim"]
-
-            opt = Opt(
-                gen_wrapped,
-                prior,
-                simulator,
-                [config.gen_opt_args],
-                scoring_rule=args.scoring_rule,
-                training_opts={
-                    "num_simulations": args.num_training_simulations,
-                    "sample_seed": config.sample_seed,
-                    "hold_out": int(config.hold_out_perc * args.num_training_simulations),
-                    "batch_size": batch_size,
-                    "log_dataloader": True,
-                    "stop_thresh": config.stop_thresh,
-                },
-                logger=run,
+            dataloader = torch.load(
+                join(args.resume_dir, "checkpoint_dataloader%d.pt" % 0)
             )
-            setattr(opt, "lat_dist", None)
-            if args.resume:
-                opt.epoch_ct = res_chpt["epoch"]
-                opt.dataloader = dataloader
+            print("classifier dataloader")
 
-            # Train model
-            print("Training")
-            opt.train(epochs, 100, start_early_stopping_after_epoch=1000)
+        # Move to GPU
+        if not args.no_cuda:
+            gen.cuda()
 
-            make_results = MakeResults(
-                generator=gen,
-                task=task,
-                lat_dist=opt.lat_dist,
-                save_dir=opt.logger.dir,
-                cuda=not args.no_cuda
-            )
-            print("round", rnd)
-            if rnd > 0:
-                opt.logger.log(make_results.calc_c2st(config.obs_num))
-            else:
-                opt.logger.log(make_results.calc_c2st_all_obs())
+        # wrap the generator to use the SR method
+        gen_wrapped = WrapGenMultipleSimulations(gen, n_simulations=args.num_simulations_generator)
+
+        # Make optimiser
+        print("Make optimiser")
+        batch_size = min(1000, int(config.batch_size_perc * budget))
+        lat_dim = config.gen_network_kwargs["add_noise_kwargs"]["lat_dim"]
+
+        opt = Opt(
+            gen_wrapped,
+            prior,
+            simulator,
+            [config.gen_opt_args],
+            scoring_rule=args.scoring_rule,
+            training_opts={
+                "num_simulations": args.num_training_simulations,
+                "sample_seed": config.sample_seed,
+                "hold_out": int(config.hold_out_perc * args.num_training_simulations),
+                "batch_size": batch_size,
+                "log_dataloader": True,
+                "stop_thresh": config.stop_thresh,
+            },
+            logger=run,
+        )
+        setattr(opt, "lat_dist", None)
+        if args.resume:
+            opt.epoch_ct = res_chpt["epoch"]
+            opt.dataloader = dataloader
+
+        # Train model
+        print("Training")
+        opt.train(epochs, 100, start_early_stopping_after_epoch=1000)
+
+        make_results = MakeResults(
+            generator=gen,
+            task=task,
+            lat_dist=opt.lat_dist,
+            save_dir=opt.logger.dir,
+            cuda=not args.no_cuda
+        )
+        opt.logger.log(make_results.calc_c2st_all_obs())
         wandb.join()
 
 

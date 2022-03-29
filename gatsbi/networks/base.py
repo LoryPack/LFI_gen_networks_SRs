@@ -45,7 +45,7 @@ class WrapGenMultipleSimulations(nn.Module):
         self.net = net
         self.n_simulations = n_simulations
 
-    def forward(self, _input: torch.Tensor) -> torch.Tensor:
+    def forward(self, _input: torch.Tensor, n_simulations: int = None) -> torch.Tensor:
         """
         Forward pass through the network self.n_simulations times
 
@@ -57,7 +57,10 @@ class WrapGenMultipleSimulations(nn.Module):
             Shape is therefore [batch, n_simulations, out_size].
         """
 
-        outputs = [self.net(_input) for i in range(self.n_simulations)]
+        if n_simulations is None:
+            n_simulations = self.n_simulations
+
+        outputs = [self.net(_input) for i in range(n_simulations)]
 
         # stack along the second dimension and add a last dimension if missing.
         return torch.atleast_3d(torch.stack(outputs, dim=1))

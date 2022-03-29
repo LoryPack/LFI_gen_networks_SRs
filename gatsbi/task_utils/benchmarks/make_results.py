@@ -65,6 +65,7 @@ class MakeResults:
             obs = obs.cuda()
 
         # Rejection sample
+        # This is to constrain the posterior to be in the region defined by prior support
         tot_samples = 0
         i = 0
         sample_size = num_samples

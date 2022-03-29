@@ -7,13 +7,16 @@ import sbibm
 import torch
 import wandb
 import yaml
+from gatsbi.utils.calibration import generate_test_set_for_calibration
 
 from gatsbi.networks.base import WrapGenMultipleSimulations
 from gatsbi.optimize import BaseSR as Opt
+from gatsbi.optimize.utils import _sample
 from gatsbi.task_utils.benchmarks import (load_generator,
                                           make_generator)
 from gatsbi.task_utils.benchmarks.make_results import MakeResults
 from gatsbi.task_utils.run_utils import _update_defaults
+from gatsbi.utils import compute_calibration_metrics
 
 
 def main(args):
@@ -45,8 +48,9 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_training_simulations) + "_" + str(args.num_simulations_generator) + (
-            "_opt" if args.opt else "")
+        name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_training_simulations) + "_" + str(
+            args.num_simulations_generator) + (
+                 "_opt" if args.opt else "")
     )
     config = NSp(**wandb.config)
 
@@ -94,7 +98,6 @@ def main(args):
         # Make optimiser
         print("Make optimiser")
         batch_size = min(1000, int(config.batch_size_perc * budget))
-        lat_dim = config.gen_network_kwargs["add_noise_kwargs"]["lat_dim"]
 
         opt = Opt(
             gen_wrapped,
@@ -121,6 +124,8 @@ def main(args):
         print("Training")
         opt.train(epochs, 100, start_early_stopping_after_epoch=1000)
 
+        # compute the C2ST values. That is done on newly generated observations, i.e. a test set. It compares the
+        # approximate posterior to a reference posterior
         make_results = MakeResults(
             generator=gen,
             task=task,
@@ -129,8 +134,14 @@ def main(args):
             cuda=not args.no_cuda
         )
         opt.logger.log(make_results.calc_c2st_all_obs())
-        wandb.join()
 
+        # compute other calibration metrics (which compare approximate posterior with true parameter value).
+        # Also need to do those on a test set.
+        test_theta_fake, test_theta = generate_test_set_for_calibration(task, gen, 100, 100, config.sample_seed)
+
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta))
+
+        wandb.join()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

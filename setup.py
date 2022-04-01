@@ -18,6 +18,7 @@ _base = [
     "plotly",
     "wandb",
     "scipy",
+    "seaborn",
     "torchvision",
     "scikit-image",
     "jupyter",

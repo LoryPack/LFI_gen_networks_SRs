@@ -137,11 +137,14 @@ def main(args):
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.
-        test_theta_fake, test_theta = generate_test_set_for_calibration(task, gen, 100, 100, config.sample_seed)
+        test_theta_fake, test_theta = generate_test_set_for_calibration(task, gen, n_test_samples=100,
+                                                                        n_generator_simulations=1000,
+                                                                        sample_seed=config.sample_seed)
 
-        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta))
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True))
 
         wandb.join()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

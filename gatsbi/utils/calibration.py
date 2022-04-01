@@ -11,10 +11,8 @@ from gatsbi.networks.base import WrapGenMultipleSimulations
 from gatsbi.optimize.utils import _sample
 
 
-def generate_test_set_for_calibration(task, generator, n_test_samples, n_generator_simulations, sample_seed):
-    simulator = task.get_simulator()
-    prior = task.get_prior()
-
+def generate_test_set_for_calibration(prior, simulator, generator, n_test_samples, n_generator_simulations,
+                                      sample_seed, rej_thresh):
     test_theta, test_obs = _sample(
         prior=prior,
         simulator=simulator,
@@ -36,7 +34,6 @@ def generate_test_set_for_calibration(task, generator, n_test_samples, n_generat
         test_theta_fake_obs = []
         while sample_size > 0:
             test_theta_fake = gen_wrapped(obs, n_simulations=sample_size)
-            rej_thresh = task.prior_params["high"]
             # print('rej_thresh', rej_thresh)
             # print(test_theta_fake)
             # print(torch.abs(test_theta_fake) < rej_thresh)

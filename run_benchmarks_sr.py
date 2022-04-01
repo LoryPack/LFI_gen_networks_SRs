@@ -5,18 +5,16 @@ from os.path import join
 
 import sbibm
 import torch
-import wandb
 import yaml
-from gatsbi.utils.calibration import generate_test_set_for_calibration
 
+import wandb
 from gatsbi.networks.base import WrapGenMultipleSimulations
 from gatsbi.optimize import BaseSR as Opt
-from gatsbi.optimize.utils import _sample
 from gatsbi.task_utils.benchmarks import (load_generator,
                                           make_generator)
 from gatsbi.task_utils.benchmarks.make_results import MakeResults
 from gatsbi.task_utils.run_utils import _update_defaults
-from gatsbi.utils import compute_calibration_metrics
+from gatsbi.utils import compute_calibration_metrics, generate_test_set_for_calibration
 
 
 def main(args):
@@ -35,7 +33,7 @@ def main(args):
 
     # Update defaults
     if len(unknown_args) > 0:
-        defaults = _update_defaults(defaults)  # could add other arguments to the defaults
+        defaults = _update_defaults(defaults)
 
     # Make a logger
     print("Making logger")
@@ -49,8 +47,7 @@ def main(args):
         notes="",
         dir=join("results", args.task_name),
         name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_training_simulations) + "_" + str(
-            args.num_simulations_generator) + (
-                 "_opt" if args.opt else "")
+            args.num_simulations_generator) + ("_opt" if args.opt else "")
     )
     config = NSp(**wandb.config)
 
@@ -126,20 +123,21 @@ def main(args):
 
         # compute the C2ST values. That is done on newly generated observations, i.e. a test set. It compares the
         # approximate posterior to a reference posterior
-        make_results = MakeResults(
-            generator=gen,
-            task=task,
-            lat_dist=opt.lat_dist,
-            save_dir=opt.logger.dir,
-            cuda=not args.no_cuda
-        )
-        opt.logger.log(make_results.calc_c2st_all_obs())
+        # make_results = MakeResults(
+        #     generator=gen,
+        #     task=task,
+        #     lat_dist=opt.lat_dist,
+        #     save_dir=opt.logger.dir,
+        #     cuda=not args.no_cuda
+        # )
+        # opt.logger.log(make_results.calc_c2st_all_obs())
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.
-        test_theta_fake, test_theta = generate_test_set_for_calibration(task, gen, n_test_samples=100,
+        test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
                                                                         n_generator_simulations=1000,
-                                                                        sample_seed=config.sample_seed)
+                                                                        sample_seed=config.sample_seed,
+                                                                        rej_thresh=task.prior_params["high"])
 
         opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True))
 

@@ -12,6 +12,7 @@ from torch import nn
 from gatsbi.optimize import Base as Opt
 from gatsbi.optimize import UnrolledOpt as UOpt
 from gatsbi.task_utils.run_utils import _update_defaults
+from gatsbi.utils import compute_calibration_metrics, generate_test_set_for_calibration
 
 
 def main(args):
@@ -31,7 +32,7 @@ def main(args):
 
     # Make a logger
     print("Making logger")
-    makedirs(join("..", "runs", args.task_name), exist_ok=True)
+    makedirs(join("results", args.task_name), exist_ok=True)
     wandb.init(
         project=args.project_name,
         group=args.group_name,
@@ -39,7 +40,8 @@ def main(args):
         resume=args.resume,
         config=defaults,
         notes="",
-        dir=join("..", "runs", args.task_name),
+        dir=join("results", args.task_name),
+        name=args.task_name + "_" + str(args.num_training_simulations) + "_" + ("_opt" if args.opt else "")
     )
     config = NSp(**wandb.config)
 
@@ -62,8 +64,9 @@ def main(args):
             gen.load_state_dict(chpt["generator_state_dict"])
             dis.load_state_dict(chpt["dis_state_dict"])
 
-        gen.cuda()
-        dis.cuda()
+        if not args.no_cuda:
+            gen.cuda()
+            dis.cuda()
 
         # Make optimiser
         print("Making optimiser")
@@ -144,5 +147,8 @@ if __name__ == "__main__":
     parser.add_argument("--multi_gpu", type=bool, default=False)
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--run_id", type=str, default=None)
-    parser.add_argument("--resume_dir", type=str, default=None)
+    parser.add_argument("--resume_dir", type=str, default=None,
+                        help="Needs to be something as 'results/two_moons/wandb/run-20220325_172124-28i1s9ik/files', "
+                             "where the part before 'files' is printed when training at the first round")
+    parser.add_argument("--no_cuda", action="store_true")
     main(parser.parse_known_args())

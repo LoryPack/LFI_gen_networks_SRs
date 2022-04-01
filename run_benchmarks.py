@@ -3,17 +3,18 @@ from argparse import Namespace as NSp
 from os import makedirs
 from os.path import join
 
+import sbibm
 import torch
-import wandb
 import yaml
 
-import sbibm
+import wandb
 from gatsbi.optimize import Base as Opt
 from gatsbi.optimize import SequentialOpt as SOpt
 from gatsbi.task_utils.benchmarks import (ProposalWrapper, load_generator,
                                           make_discriminator, make_generator)
 from gatsbi.task_utils.benchmarks.make_results import MakeResults
 from gatsbi.task_utils.run_utils import _update_defaults
+from gatsbi.utils import compute_calibration_metrics, generate_test_set_for_calibration
 
 
 def main(args):
@@ -25,11 +26,11 @@ def main(args):
 
     # Update defaults
     if len(unknown_args) > 0:
-        defaults = _update_defaults(defaults)
+        defaults = _update_defaults(defaults, )
 
     # Make a logger
     print("Making logger")
-    makedirs(join("..", "runs", args.task_name), exist_ok=True)
+    makedirs(join("results", args.task_name), exist_ok=True)
     wandb.init(
         project=args.project_name,
         group=args.group_name,
@@ -37,7 +38,8 @@ def main(args):
         resume=args.resume,
         config=defaults,
         notes="",
-        dir=join("..", "runs", args.task_name),
+        dir=join("results", args.task_name),
+        name=args.task_name + "_" + str(args.num_training_simulations) + "_" + ("_opt" if args.opt else "")
     )
     config = NSp(**wandb.config)
 
@@ -72,7 +74,7 @@ def main(args):
                 epochs_per_round[start] = args.epochs
 
         for rnd, (epochs, budget) in enumerate(
-            zip(epochs_per_round[start:], budget_per_round[start:]), start=start
+                zip(epochs_per_round[start:], budget_per_round[start:]), start=start
         ):
 
             # Make proposal, generator and discriminator
@@ -231,6 +233,16 @@ def main(args):
                 opt.logger.log(make_results.calc_c2st(config.obs_num))
             else:
                 opt.logger.log(make_results.calc_c2st_all_obs())
+
+        # compute other calibration metrics (which compare approximate posterior with true parameter value).
+        # Also need to do those on a test set.
+        test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
+                                                                        n_generator_simulations=1000,
+                                                                        sample_seed=config.sample_seed,
+                                                                        rej_thresh=task.prior_params["high"])
+
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True))
+
         wandb.join()
 
 

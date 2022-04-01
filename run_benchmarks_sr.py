@@ -123,14 +123,14 @@ def main(args):
 
         # compute the C2ST values. That is done on newly generated observations, i.e. a test set. It compares the
         # approximate posterior to a reference posterior
-        # make_results = MakeResults(
-        #     generator=gen,
-        #     task=task,
-        #     lat_dist=opt.lat_dist,
-        #     save_dir=opt.logger.dir,
-        #     cuda=not args.no_cuda
-        # )
-        # opt.logger.log(make_results.calc_c2st_all_obs())
+        make_results = MakeResults(
+            generator=gen,
+            task=task,
+            lat_dist=opt.lat_dist,
+            save_dir=opt.logger.dir,
+            cuda=not args.no_cuda
+        )
+        opt.logger.log(make_results.calc_c2st_all_obs())
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.

@@ -12,7 +12,7 @@ from gatsbi.optimize.utils import _sample
 
 
 def generate_test_set_for_calibration(prior, simulator, generator, n_test_samples, n_generator_simulations,
-                                      sample_seed, rej_thresh):
+                                      sample_seed, rej_thresh=None):
     test_theta, test_obs = _sample(
         prior=prior,
         simulator=simulator,
@@ -30,20 +30,24 @@ def generate_test_set_for_calibration(prior, simulator, generator, n_test_sample
     for obs in test_obs:
         obs = obs.unsqueeze(0)
 
-        sample_size = n_generator_simulations
-        test_theta_fake_obs = []
-        while sample_size > 0:
-            test_theta_fake = gen_wrapped(obs, n_simulations=sample_size)
-            # print('rej_thresh', rej_thresh)
-            # print(test_theta_fake)
-            # print(torch.abs(test_theta_fake) < rej_thresh)
-            inds = torch.all(torch.abs(test_theta_fake) < rej_thresh, -1).reshape(-1)
-            ok_elements = inds.sum()
-            if ok_elements > 0:
-                sample_size -= ok_elements
-                test_theta_fake_obs.append(test_theta_fake[0][inds])
+        if rej_thresh is None:
+            test_theta_fake_obs = gen_wrapped(obs, n_simulations=n_generator_simulations)
+        else:
+            test_theta_fake_obs = []
+            sample_size = n_generator_simulations
+            while sample_size > 0:
+                test_theta_fake = gen_wrapped(obs, n_simulations=sample_size)
+                # print('rej_thresh', rej_thresh)
+                # print(test_theta_fake)
+                # print(torch.abs(test_theta_fake) < rej_thresh)
+                inds = torch.all(torch.abs(test_theta_fake) < rej_thresh, -1).reshape(-1)
+                ok_elements = inds.sum()
+                if ok_elements > 0:
+                    sample_size -= ok_elements
+                    test_theta_fake_obs.append(test_theta_fake[0][inds])
+            test_theta_fake_obs = torch.concat(test_theta_fake_obs, 0)
 
-        test_theta_fake_all_obs.append(torch.concat(test_theta_fake_obs, 0))
+        test_theta_fake_all_obs.append(test_theta_fake_obs)
 
     test_theta_fake_all_obs = torch.stack(test_theta_fake_all_obs, 0)
 

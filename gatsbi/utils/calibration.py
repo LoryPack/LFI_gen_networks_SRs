@@ -37,7 +37,6 @@ def generate_test_set_for_calibration(task, generator, n_test_samples, n_generat
         while sample_size > 0:
             test_theta_fake = gen_wrapped(obs, n_simulations=sample_size)
             rej_thresh = task.prior_params["high"]
-            rej_thresh = torch.tensor([1.0, 1e-03])
             # print('rej_thresh', rej_thresh)
             # print(test_theta_fake)
             # print(torch.abs(test_theta_fake) < rej_thresh)

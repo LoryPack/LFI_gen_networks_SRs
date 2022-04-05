@@ -12,7 +12,7 @@ from gatsbi.optimize.utils import _sample
 
 
 def generate_test_set_for_calibration(prior, simulator, generator, n_test_samples, n_generator_simulations,
-                                      sample_seed, rej_thresh=None):
+                                      sample_seed, rej_thresh=None, data_is_image=True):
     test_theta, test_obs = _sample(
         prior=prior,
         simulator=simulator,
@@ -50,6 +50,12 @@ def generate_test_set_for_calibration(prior, simulator, generator, n_test_sample
         test_theta_fake_all_obs.append(test_theta_fake_obs)
 
     test_theta_fake_all_obs = torch.stack(test_theta_fake_all_obs, 0)
+
+    # flatten the test set if it is image:
+    if data_is_image:
+        test_theta_fake_all_obs = test_theta_fake_all_obs.squeeze(1)
+        test_theta = test_theta.flatten(1, -1)
+        test_theta_fake_all_obs = test_theta_fake_all_obs.flatten(2, -1)
 
     return test_theta_fake_all_obs, test_theta
 

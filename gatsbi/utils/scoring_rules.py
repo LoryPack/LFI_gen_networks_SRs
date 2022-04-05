@@ -358,3 +358,26 @@ class KernelScore(ScoringRule):
         return t_sim_sim - t_obs_sim
 
     # todo speed up by reciclying previous computations of 2. / ensemble_size and similar?
+
+
+class ScoringRulesForImages(ScoringRule):
+    def __init__(self, scoring_rule: ScoringRule):
+        """
+        When you call the `estimate_score_batch` method, this method flattens the weatherbench data and computes the
+        scoring rule on the flattened data.
+
+        :param scoring_rule: an instance of ScoringRule class.
+        """
+        self.scoring_rule = scoring_rule
+
+    def estimate_score_batch(self, forecast, verification):
+        """
+        """
+        assert forecast.shape[0] == verification.shape[0]
+        assert len(forecast.shape) == 5
+        assert len(verification.shape) == 4
+
+        forecast = forecast.flatten(2, -1)
+        verification = verification.flatten(1, -1)
+
+        return self.scoring_rule.estimate_score_batch(forecast, verification)

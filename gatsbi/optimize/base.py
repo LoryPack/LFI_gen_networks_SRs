@@ -13,7 +13,7 @@ from gatsbi.networks import BaseNetwork, Discriminator, Generator
 
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
                     _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth)
-from ..utils import EnergyScore, KernelScore
+from ..utils import EnergyScore, KernelScore, ScoringRulesForImages
 
 
 class Base:
@@ -287,6 +287,7 @@ class BaseSR:
             scoring_rule: Optional[str] = "energy_score",
             round_number: Optional[int] = 0,
             reuse_samples: Optional[bool] = False,
+            data_is_image=False,
             training_opts: Optional[dict] = dict(
                 num_simulations=1000,
                 sample_seed=42,
@@ -316,6 +317,8 @@ class BaseSR:
             round_number: round number for training
             reuse_samples: if True, reuse samples from previous rounds for
                            training.
+            data_is_image: if True, data is images. In that case, you need to wrap the Scoring Rules such that it
+                    flattens each image to a 1d vector before computing the SR
             training_opts: hyper-parameters for training Gen-SR
                 num_simulations (int): simulation budget i.e. maximum number
                                        of calls to simulator allowed across all
@@ -399,9 +402,10 @@ class BaseSR:
                         "kernel_bandwidth": self.kernel_bandwidth,
                     }
                 )
-
         else:
             raise ValueError("scoring_rule must be 'energy_score' or 'kernel_score'")
+        if data_is_image:
+            self.scoring_rule = ScoringRulesForImages(self.scoring_rule)
 
         # Logging progress
         if self.logger is not None:

@@ -41,7 +41,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + str(args.num_training_simulations) + "_" + ("_opt" if args.opt else "")
+        name=args.task_name + "_" + str(args.num_training_simulations)
     )
     config = NSp(**wandb.config)
 
@@ -71,7 +71,11 @@ def main(args):
         # Make optimiser
         print("Making optimiser")
         batch_size = min(1000, int(config.batch_size_perc * config.num_simulations))
-        prior = application.Prior()
+        if args.task_name == "camera_model":
+            path_to_data = "results/EMNIST_data"
+            prior = application.Prior(path_to_data=path_to_data, few_samples=True)
+        else:
+            prior = application.Prior()
         simulator = application.Simulator()
         dataloader = {}
         if hasattr(application, "get_dataloader"):
@@ -135,6 +139,14 @@ def main(args):
         print("Training")
         opt.train(args.epochs, 100)
 
+        # compute other calibration metrics (which compare approximate posterior with true parameter value).
+        # Also need to do those on a test set.
+        test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
+                                                                        n_generator_simulations=1000,
+                                                                        sample_seed=config.sample_seed)
+
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True))
+
     wandb.join()
 
 
@@ -144,6 +156,7 @@ if __name__ == "__main__":
     parser.add_argument("--task_name", type=str)
     parser.add_argument("--group_name", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=20000)
+    parser.add_argument("--num_training_simulations", type=int, default=10000)
     parser.add_argument("--multi_gpu", type=bool, default=False)
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--run_id", type=str, default=None)

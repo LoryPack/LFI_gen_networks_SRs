@@ -26,13 +26,13 @@ def generate_test_set_for_calibration(prior, simulator, generator, n_test_sample
 
     gen_wrapped.eval()
 
-    test_theta_fake_all_obs = []
-    for obs in test_obs:
-        obs = obs.unsqueeze(0)
+    if rej_thresh is None:
+        test_theta_fake_all_obs = gen_wrapped(test_obs, n_simulations=n_generator_simulations)
+    else:
+        test_theta_fake_all_obs = []
+        for obs in test_obs:
+            obs = obs.unsqueeze(0)
 
-        if rej_thresh is None:
-            test_theta_fake_obs = gen_wrapped(obs, n_simulations=n_generator_simulations)
-        else:
             test_theta_fake_obs = []
             sample_size = n_generator_simulations
             while sample_size > 0:
@@ -47,9 +47,9 @@ def generate_test_set_for_calibration(prior, simulator, generator, n_test_sample
                     test_theta_fake_obs.append(test_theta_fake[0][inds])
             test_theta_fake_obs = torch.concat(test_theta_fake_obs, 0)
 
-        test_theta_fake_all_obs.append(test_theta_fake_obs)
+            test_theta_fake_all_obs.append(test_theta_fake_obs)
 
-    test_theta_fake_all_obs = torch.stack(test_theta_fake_all_obs, 0)
+        test_theta_fake_all_obs = torch.stack(test_theta_fake_all_obs, 0)
 
     # flatten the test set if it is image:
     if data_is_image:
@@ -65,9 +65,11 @@ def compute_calibration_metrics(theta_samples, theta_test, sbc_hist=False, sbc_l
     test_theta_fake_numpy = theta_samples.transpose(1, 0).cpu().detach().numpy()
     test_theta_numpy = theta_test.cpu().numpy()
 
+    # print("Compute metrics...")
     cal_err_val = calibration_error(test_theta_fake_numpy, test_theta_numpy, alpha_resolution=100)
     r2_val = R2(test_theta_fake_numpy, test_theta_numpy)
     rmse_val = rmse(test_theta_fake_numpy, test_theta_numpy)
+    # print("Done")
 
     return_dict = {
         "cal_err_val_mean": cal_err_val.mean(),
@@ -79,11 +81,14 @@ def compute_calibration_metrics(theta_samples, theta_test, sbc_hist=False, sbc_l
     }
 
     if sbc_hist or sbc_lines:
+        # print("Computing SBC")
         ranks = sbc(test_theta_fake_numpy, test_theta_numpy)
     if sbc_hist:
+        # print("Plotting SBC histogram")
         fig, ax = make_sbc_plot_histogram(ranks, **sbc_hist_kwargs)
         return_dict["sbc_hist"] = wandb.Image(fig)
     if sbc_lines:
+        # print("Plotting SBC lines")
         fig, ax = make_sbc_plot_lines(ranks, **sbc_lines_kwargs)
         return_dict["sbc_lines"] = wandb.Image(fig)
 

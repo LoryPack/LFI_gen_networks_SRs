@@ -12,7 +12,8 @@ from torch import nn
 from gatsbi.optimize import Base as Opt
 from gatsbi.optimize import UnrolledOpt as UOpt
 from gatsbi.task_utils.run_utils import _update_defaults
-from gatsbi.utils import compute_calibration_metrics, generate_test_set_for_calibration
+from gatsbi.utils import compute_calibration_metrics, generate_test_set_for_calibration, \
+    generate_test_set_for_calibration_from_obs
 
 
 def main(args):
@@ -41,7 +42,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + str(args.num_training_simulations)
+        name=args.task_name + "_" + str(defaults["num_simulations"])
     )
     config = NSp(**wandb.config)
 
@@ -141,9 +142,21 @@ def main(args):
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.
-        test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
-                                                                        n_generator_simulations=1000,
-                                                                        sample_seed=config.sample_seed)
+
+        if hasattr(application, "get_dataloader"):  # for shallow water model, use a function to obtain the dataset
+            # That relies on data generated using the sample_shallow_water.py script.
+            test_theta, test_obs = application.get_dataloader(
+                batch_size, 0, config.path_to_data, test=True, return_data=True
+            )
+            test_theta_fake, test_theta = generate_test_set_for_calibration_from_obs(test_theta, test_obs, gen,
+                                                                                     n_test_samples=100,
+                                                                                     n_generator_simulations=1000,
+                                                                                     data_is_image=args.task_name == "camera_model")
+        else:
+            test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
+                                                                            n_generator_simulations=1000,
+                                                                            sample_seed=config.sample_seed,
+                                                                            data_is_image=args.task_name == "camera_model")
 
         opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True))
 

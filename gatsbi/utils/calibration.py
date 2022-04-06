@@ -12,13 +12,22 @@ from gatsbi.optimize.utils import _sample
 
 
 def generate_test_set_for_calibration(prior, simulator, generator, n_test_samples, n_generator_simulations,
-                                      sample_seed, rej_thresh=None, data_is_image=True):
+                                      sample_seed, rej_thresh=None, data_is_image=False):
     test_theta, test_obs = _sample(
         prior=prior,
         simulator=simulator,
         sample_seed=sample_seed + 1,
         num_samples=n_test_samples,  # number of samples to use for calibration
     )
+
+    return generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, n_test_samples,
+                                                      n_generator_simulations, rej_thresh, data_is_image)
+
+
+def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, n_test_samples, n_generator_simulations,
+                                               rej_thresh=None, data_is_image=False):
+    test_theta = test_theta[0:n_test_samples]
+    test_obs = test_obs[0:n_test_samples]
 
     # need to generate synthetic thetas, some of them for each of the observation
     gen_wrapped = WrapGenMultipleSimulations(

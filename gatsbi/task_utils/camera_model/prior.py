@@ -16,7 +16,7 @@ def _merge_train_test_few(data_funcn, path_to_data, unsqueeze=False, **funcn_kwa
     for dat in data_funcn(path_to_data, train=True, **funcn_kwargs):
         train_list.append(dat[0].unsqueeze(0))
         i += 1
-        if i == 1000:
+        if i == 10000:
             break
     i = 0
     train = torch.cat(train_list, 0)
@@ -24,7 +24,7 @@ def _merge_train_test_few(data_funcn, path_to_data, unsqueeze=False, **funcn_kwa
     for dat in data_funcn(path_to_data, train=False, **funcn_kwargs):
         test_list.append(dat[0].unsqueeze(0))
         i += 1
-        if i == 1000:
+        if i == 10000:
             break
     test = torch.cat(test_list, 0)
     return torch.cat([train, test], 0)

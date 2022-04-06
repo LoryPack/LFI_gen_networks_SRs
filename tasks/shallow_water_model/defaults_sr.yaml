@@ -12,8 +12,8 @@ gen_opt_args:
 hold_out_perc: 0.2
 max_norm_dis: .01
 max_norm_gen: .01
-num_simulations: 2
-path_to_data: "./shallow_water_data/"
+num_simulations: 10000
+path_to_data: "/data/localhost/pacchiar/GATSBI_extension_res/shallow_water_data/"
 unroll_steps: 0
 log_dataloader: False
 sample_seed: 42

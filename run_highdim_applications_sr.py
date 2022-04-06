@@ -35,6 +35,9 @@ def main(args):
     defaults["epochs"] = args.epochs
     defaults["num_training_simulations"] = args.num_training_simulations
     defaults["num_simulations_generator"] = args.num_simulations_generator
+    defaults["patched_sr"] = args.patched_sr
+    defaults["patch_step"] = args.patch_step
+    defaults["patch_size"] = args.patch_size
 
     # Update defaults
     if len(unknown_args) > 0:
@@ -97,6 +100,12 @@ def main(args):
                 batch_size, int(config.hold_out_perc * args.num_training_simulations), config.path_to_data
             )
 
+        # default values of patch size and step:
+        if args.patch_size is None:
+            args.patch_size = 4 if args.task_name == "camera_model" else 2
+        if args.patch_step is None:
+            args.patch_step = 4 if args.task_name == "camera_model" else 2
+
         # Make optimizer
         opt = Opt(
             generator=gen_wrapped,
@@ -105,6 +114,9 @@ def main(args):
             optim_args=[config.gen_opt_args],
             dataloader=dataloader,
             scoring_rule=args.scoring_rule,
+            patched_sr=args.patched_sr,
+            patch_step=args.patch_step,
+            patch_size=args.patch_size,
             round_number=0,
             training_opts={
                 "num_simulations": args.num_training_simulations,
@@ -162,4 +174,8 @@ if __name__ == "__main__":
                         help="Needs to be something as 'results/two_moons/wandb/run-20220325_172124-28i1s9ik/files', "
                              "where the part before 'files' is printed when training at the first round")
     parser.add_argument("--no_cuda", action="store_true")
+    parser.add_argument("--patched_sr", action="store_true")
+    parser.add_argument("--patch_step", type=int, default=None)
+    parser.add_argument("--patch_size", type=int, default=None)
+
     main(parser.parse_known_args())

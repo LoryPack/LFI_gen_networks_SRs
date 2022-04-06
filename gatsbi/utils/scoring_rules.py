@@ -416,37 +416,82 @@ class PatchedScoringRule(ScoringRule):
     # todo next iteration: allow to use different scoring rules for each patch. This can be useful for instance for
     #  the kernel SR, you can use different bandwidths for the different patches
 
-    def __init__(self, scoring_rule: ScoringRule, masks: TensorType["n_patches", "data_size", bool]):
+    def __init__(self, scoring_rule: ScoringRule, patch_step: int = 8, patch_size: int = 16,
+                 data_is_image: bool = False):
         """
         When you call the `estimate_score_batch` method, the provided scoring_rule is computed on all patches
         defined by the masks and then summed over.
 
         :param scoring_rule: an instance of ScoringRule class.
-        :param masks: Torch tensor, in which the first dimension denotes the number of patches and the second dimension
-         the size of the data. Each entry is True or False according to whether that data component is part of
-         the corresponding patch.
         """
         self.scoring_rule = scoring_rule
-        self.masks = masks
+        self.patch_step = patch_step
+        self.patch_size = patch_size
+        self.data_is_image = data_is_image
 
-    def estimate_score_batch(self, forecast: TensorType["batch", "ensemble_size", "data_size"],
-                             verification: TensorType["batch", "data_size"]) -> TensorType[float]:
+    def estimate_score_batch(self, forecast, verification):
+        if self.data_is_image:
+            return self.estimate_score_batch_image(forecast, verification)
+        else:
+            return self.estimate_score_batch_1d(forecast, verification)
+
+    def estimate_score_batch_1d(self, forecast: TensorType["batch", "ensemble_size", "data_size"],
+                                verification: TensorType["batch", "data_size"]) -> TensorType[float]:
+        """
+        This relies on the .unfold method in PyTorch. Notice that we use no padding.
+        """
+        # Tensor.unfold replaces the unfolded dimension with the number of windows, and adds a last dimension with the
+        # content of each window
+        # dimension, size, step
+
+        forecast = forecast.unfold(2, self.patch_size, self.patch_step)
+        verification = verification.unfold(1, self.patch_size, self.patch_step)
+        #  forecast:        batch x ensemble x num_windows x patch_size
+        #  verification:    batch x num_windows x patch_size
+
+        # swap the ensemble size dimension with num_windows
+        forecast = forecast.permute(0, 2, 1, 3)
+
+        # now make forecast: TensorType["batch_new", "ensemble_size", "data_size"],
+        #          verification: TensorType["batch_new", "data_size"]
+        # the original batch times num_windows make the new batch size;
+        forecast = forecast.flatten(0, 1)
+        verification = verification.flatten(0, 1)
+
+        return self.scoring_rule.estimate_score_batch(forecast, verification)
+
+    def estimate_score_batch_image(self,
+                                   forecast: TensorType["batch_size", "ensemble_size", "fields", "height", "width"],
+                                   verification: TensorType["batch_size", "fields", "height", "width"]) -> TensorType[
+        float]:
         """
         """
+        # permute the field dimension, as the code below was written for field dimension being the last
+        forecast = forecast.permute(0, 1, 3, 4, 2)
+        verification = verification.permute(0, 2, 3, 1)
 
-        # for implementation
-        sr_tot = 0
-        for i in range(self.masks.shape[0]):
-            sr_tot += self.scoring_rule.estimate_score_batch(forecast[:, :, self.masks[i]],
-                                                             verification[:, self.masks[i]])
+        # Tensor.unfold replaces the unfolded dimension with the number of windows, and adds a last dimension with the
+        # content of each window
+        # dimension, size, step
+        forecast = forecast.unfold(2, self.patch_size, self.patch_step)
+        verification = verification.unfold(1, self.patch_size, self.patch_step)
 
-        # map implementation: a bit slower, even with many masks
-        # def _compute_sr(mask):
-        #     return self.scoring_rule.estimate_score_batch(forecast[:, :, mask], verification[:, mask])
-        #
-        # sr_tot_2 = sum(list(map(_compute_sr, self.masks)))
+        forecast = forecast.unfold(3, self.patch_size, self.patch_step)
+        verification = verification.unfold(2, self.patch_size, self.patch_step)
+        #  forecast: batch x ensemble x num_windows_height x num_windows_width x fields x patch_size x patch_size
+        #  verification: batch x num_windows_height x num_windows_width x fields x patch_size x patch_size
 
-        return sr_tot
+        # swap the ensemble size dimension with num_windows_height and num_windows_width:
+        forecast = forecast.permute(0, 2, 3, 1, 4, 5, 6)
+
+        # now make forecast: TensorType["batch_new", "ensemble_size", "data_size"],
+        #          verification: TensorType["batch_new", "data_size"]
+        # the original batch, num_windows_height and num_windows_width make the new batch size;
+        # fields x patch_size x patch_size make the new data_size
+        forecast = forecast.flatten(0, 2).flatten(2, -1)
+        verification = verification.flatten(0, 2).flatten(1, -1)
+
+        return self.scoring_rule.estimate_score_batch(forecast, verification)
 
 
 class ScoringRulesForImages(ScoringRule):

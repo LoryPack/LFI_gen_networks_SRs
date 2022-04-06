@@ -13,7 +13,7 @@ from gatsbi.networks import BaseNetwork, Discriminator, Generator
 
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
                     _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth)
-from ..utils import EnergyScore, KernelScore, ScoringRulesForImages
+from ..utils import EnergyScore, KernelScore, ScoringRulesForImages, PatchedScoringRule
 
 
 class Base:
@@ -285,6 +285,9 @@ class BaseSR:
             optim_args: Tuple[float, Tuple[float, float]],
             dataloader: Optional[dict] = dict(),
             scoring_rule: Optional[str] = "energy_score",
+            patched_sr: Optional[bool] = False,
+            patch_step: Optional[int] = 4,
+            patch_size: Optional[int] = 4,
             round_number: Optional[int] = 0,
             reuse_samples: Optional[bool] = False,
             data_is_image=False,
@@ -314,6 +317,9 @@ class BaseSR:
                         MakeDataset objects.
             scoring_rule: 'energy_score' or 'kernel_score'.
                    See gatsbi.utils.scoring_rules docs for more information
+            patched_sr: whether to use patched SR.
+            patch_step: step size for patching.
+            patch_size: size of patch.
             round_number: round number for training
             reuse_samples: if True, reuse samples from previous rounds for
                            training.
@@ -398,14 +404,17 @@ class BaseSR:
             self.scoring_rule = KernelScore(sigma=self.kernel_bandwidth, **sr_kwargs)
             # save the kernel bandwidth in the logger
             if self.logger is not None:
-                self.logger.log(
-                    {
-                        "kernel_bandwidth": self.kernel_bandwidth,
-                    }
-                )
+                self.logger.log({"kernel_bandwidth": self.kernel_bandwidth})
         else:
             raise ValueError("scoring_rule must be 'energy_score' or 'kernel_score'")
-        if data_is_image:
+        if patched_sr:
+            self.scoring_rule = PatchedScoringRule(
+                self.scoring_rule,
+                patch_step=patch_step,
+                patch_size=patch_size,
+                data_is_image=data_is_image,
+            )
+        elif data_is_image:
             self.scoring_rule = ScoringRulesForImages(self.scoring_rule)
 
         # Logging progress

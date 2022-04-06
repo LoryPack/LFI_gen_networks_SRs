@@ -1,10 +1,14 @@
 from os.path import join
 from time import time
+from typing import Union
 
 import numpy as np
 import torch
+from torchtyping import TensorType, patch_typeguard
 
-from gatsbi.networks.base import WrapGenMultipleSimulations
+from gatsbi.networks import WrapGenMultipleSimulations
+
+patch_typeguard()  # use before @typechecked
 
 
 def _sample(prior, simulator, sample_seed, num_samples):
@@ -181,7 +185,8 @@ def _log_metrics_sr(opt, batch_size=1000):
         theta_fake_cv = opt._fwd_pass_generator(obs_test[batch_size * batch_id:batch_size * (batch_id + 1)])
         # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
 
-        loss_gen += opt.scoring_rule.estimate_score_batch(theta_fake_cv, theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
+        loss_gen += opt.scoring_rule.estimate_score_batch(theta_fake_cv,
+                                                          theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
         batch_id += 1
 
     loss_gen /= batch_id
@@ -247,9 +252,9 @@ def _stop_training(opt):
     # If discriminator is overconfident  -- i.e variance of discrim.
     # outputs does not change
     if (
-        (len(dfake_std) >= 10)
-        and (dfake_std.mean() < 1e-6)
-        and (dreal_std.mean() < 1e-6)
+            (len(dfake_std) >= 10)
+            and (dfake_std.mean() < 1e-6)
+            and (dreal_std.mean() < 1e-6)
     ):
         print("Discriminator is over-confident")
         return True
@@ -266,7 +271,7 @@ def _stop_training(opt):
 
     # If discriminator output is same for real and fake data
     elif (len(dreal_mean) >= 10) and (
-        abs((dreal_mean - dfake_mean).mean()) < stop_thresh
+            abs((dreal_mean - dfake_mean).mean()) < stop_thresh
     ):
         print("Discriminator output .5")
         return True
@@ -278,7 +283,9 @@ def _stop_training(opt):
     return False
 
 
-def estimate_bandwidth(parameters, return_values=["median"], data_is_image=False):
+def estimate_bandwidth(
+        parameters: Union[TensorType["batch", "theta_size"], TensorType["batch", "fields", "height", "width"]],
+        return_values=["median"], data_is_image=False):
     """Estimate the bandwidth for the` gaussian kernel in KernelSR. parameters has shape ["batch", "theta_size"] and
     return_values is a list of strings."""
     if data_is_image:

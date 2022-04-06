@@ -18,7 +18,7 @@ class BaseNetwork(nn.Module):
         super(BaseNetwork, self).__init__()
         self._hidden_layers = nn.Sequential(*hidden_layers)
 
-    def forward(self, _input: torch.Tensor) -> torch.Tensor:
+    def forward(self, _input):
         """
         Forward pass through the network.
 
@@ -45,7 +45,7 @@ class WrapGenMultipleSimulations(nn.Module):
         self.net = net
         self.n_simulations = n_simulations
 
-    def forward(self, _input: torch.Tensor, n_simulations: int = None) -> torch.Tensor:
+    def forward(self, _input, n_simulations: int = None):
         """
         Forward pass through the network self.n_simulations times
 

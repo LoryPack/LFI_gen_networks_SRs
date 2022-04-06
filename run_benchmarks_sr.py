@@ -8,7 +8,14 @@ import torch
 import yaml
 
 import wandb
-from gatsbi.networks.base import WrapGenMultipleSimulations
+
+from typeguard.importhook import install_import_hook
+
+# comment these out when deploying:
+install_import_hook('gatsbi.utils')
+install_import_hook('gatsbi.optimize.utils')
+
+from gatsbi.networks import WrapGenMultipleSimulations
 from gatsbi.optimize import BaseSR as Opt
 from gatsbi.task_utils.benchmarks import (load_generator,
                                           make_generator)

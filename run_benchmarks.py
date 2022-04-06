@@ -8,6 +8,13 @@ import torch
 import yaml
 
 import wandb
+
+from typeguard.importhook import install_import_hook
+
+# comment these out when deploying:
+install_import_hook('gatsbi.utils')
+install_import_hook('gatsbi.optimize.utils')
+
 from gatsbi.optimize import Base as Opt
 from gatsbi.optimize import SequentialOpt as SOpt
 from gatsbi.task_utils.benchmarks import (ProposalWrapper, load_generator,

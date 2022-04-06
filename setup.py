@@ -20,6 +20,7 @@ _base = [
     "scipy",
     "seaborn",
     "torchvision",
+    "torchtyping",
     "scikit-image",
     "jupyter",
 ]

@@ -5,9 +5,15 @@ from os import makedirs
 from os.path import join
 
 import torch
-import wandb
 import yaml
 from torch import nn
+from typeguard.importhook import install_import_hook
+
+import wandb
+
+# comment these out when deploying:
+install_import_hook('gatsbi.utils')
+install_import_hook('gatsbi.optimize.utils')
 
 from gatsbi.optimize import Base as Opt
 from gatsbi.optimize import UnrolledOpt as UOpt

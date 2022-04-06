@@ -7,7 +7,7 @@ from matplotlib.lines import Line2D
 from scipy.stats import binom
 from sklearn.metrics import r2_score
 
-from gatsbi.networks.base import WrapGenMultipleSimulations
+from gatsbi.networks import WrapGenMultipleSimulations
 from gatsbi.optimize.utils import _sample
 
 

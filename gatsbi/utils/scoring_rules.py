@@ -1,10 +1,12 @@
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Optional
+from typing import Sequence, Union
 
 import numpy as np
 import torch
-from torch import Tensor
+from torchtyping import TensorType, patch_typeguard
+
+patch_typeguard()  # use before @typechecked
 
 
 # define an abstract class for the SRs
@@ -82,8 +84,8 @@ class EnergyScore(ScoringRule):
 
         return result
 
-    def estimate_score_batch(self, forecast,
-                             verification):
+    def estimate_score_batch(self, forecast: TensorType["batch", "ensemble_size", "data_size"],
+                             verification: TensorType["batch", "data_size"]) -> TensorType[float]:
         """The previous implementation considered a set of simulations and a set of observations, and estimated the
         score separately for each observation with the provided simulations. Here instead we have a batch
         of (simulations, observation); then it corresponds to the one above when batch_size=1 and the observation size
@@ -184,8 +186,8 @@ class KernelScore(ScoringRule):
             result /= observations.shape[0]
         return result
 
-    def estimate_score_batch(self, forecast,
-                             verification):
+    def estimate_score_batch(self, forecast: TensorType["batch", "ensemble_size", "data_size"],
+                             verification: TensorType["batch", "data_size"]) -> TensorType[float]:
         """The previous implementation considered a set of simulations and a set of observations, and estimated the
         score separately for each observation with the provided simulations. Here instead we have a batch
         of (simulations, observation); then it corresponds to the one above when batch_size=1 and the observation size
@@ -279,8 +281,9 @@ class KernelScore(ScoringRule):
     def def_gaussian_kernel_torch(sigma=1):
         sigma_2 = 2 * sigma ** 2
 
-        def Gaussian_kernel_vectorized(X,
-                                       Y):
+        def Gaussian_kernel_vectorized(X: TensorType["batch_size", "x_size", "data_size"],
+                                       Y: TensorType["batch_size", "y_size", "data_size"]) -> TensorType[
+            "batch_size", "x_size", "y_size"]:
             """Here X and Y have shape (n_samples_x, n_features) and (n_samples_y, n_features);
             this directly computes the kernel for all pairwise components"""
             XY = torch.cdist(X, Y)
@@ -292,7 +295,9 @@ class KernelScore(ScoringRule):
     def def_rational_quadratic_kernel_torch(alpha=1):
         alpha_2 = 2 * alpha
 
-        def rational_quadratic_kernel_vectorized(X, Y):
+        def rational_quadratic_kernel_vectorized(X: TensorType["batch_size", "x_size", "data_size"],
+                                                 Y: TensorType["batch_size", "y_size", "data_size"]) -> TensorType[
+            "batch_size", "x_size", "y_size"]:
             """Here X and Y have shape (n_samples_x, n_features) and (n_samples_y, n_features);
             this directly computes the kernel for all pairwise components"""
             XY = torch.cdist(X, Y)
@@ -300,7 +305,9 @@ class KernelScore(ScoringRule):
 
         return rational_quadratic_kernel_vectorized
 
-    def compute_Gram_matrix_batch(self, forecast, verification):
+    def compute_Gram_matrix_batch(self, forecast: TensorType["batch", "ensemble_size", "data_size"],
+                                  verification: TensorType["batch", "data_size"]) -> (
+            TensorType["batch", "ensemble_size", "ensemble_size"], TensorType["batch", 1, "ensemble_size"]):
 
         batch_size, ensemble_size, data_size = forecast.shape
 
@@ -325,7 +332,8 @@ class KernelScore(ScoringRule):
         return K_sim_sim, K_obs_sim
 
     @staticmethod
-    def MMD_unbiased_batch(K_sim_sim, K_obs_sim):
+    def MMD_unbiased_batch(K_sim_sim: TensorType["batch", "ensemble_size", "ensemble_size"],
+                           K_obs_sim: TensorType["batch", 1, "ensemble_size"]) -> TensorType[float]:
         # Adapted from https://github.com/eugenium/MMD/blob/2fe67cbc7378f10f3b273cfd8d8bbd2135db5798/mmd.py
         # The estimate when distribution of x is not equal to y
         batch_size, ensemble_size, _ = K_sim_sim.shape
@@ -346,7 +354,8 @@ class KernelScore(ScoringRule):
         return t_sim_sim - t_obs_sim
 
     @staticmethod
-    def MMD_V_estimator_batch(K_sim_sim, K_obs_sim):
+    def MMD_V_estimator_batch(K_sim_sim: TensorType["batch", "ensemble_size", "ensemble_size"],
+                              K_obs_sim: TensorType["batch", 1, "ensemble_size"]) -> TensorType[float]:
         # Adapted from https://github.com/eugenium/MMD/blob/2fe67cbc7378f10f3b273cfd8d8bbd2135db5798/mmd.py
         # The estimate when distribution of x is not equal to y
         batch_size, ensemble_size, _ = K_sim_sim.shape
@@ -360,6 +369,86 @@ class KernelScore(ScoringRule):
     # todo speed up by reciclying previous computations of 2. / ensemble_size and similar?
 
 
+class SumScoringRules(ScoringRule):
+
+    def __init__(self, scoring_rule_list: Sequence[ScoringRule], weight_list: Sequence[float] = None):
+
+        self.n_srs = len(scoring_rule_list)
+        if self.n_srs == 0:
+            raise RuntimeError("You need to provide at least a scoring rule.")
+
+        if weight_list is None:
+            weight_list = [1.0] * self.n_srs
+        else:
+            if self.n_srs != len(weight_list):
+                raise RuntimeError("The length of the scoring rules and weight lists have to be the same")
+
+        # check that the provided scoring rules are ScoringRules
+        for sr in scoring_rule_list:
+            if not isinstance(sr, ScoringRule):
+                raise RuntimeError("The provided scoring rules have to be instances of ScoringRules classes")
+
+        self.scoring_rule_list = scoring_rule_list
+        self.weight_list = weight_list
+
+    def estimate_score_batch(self, forecast: Union[TensorType["batch", "ensemble_size", "data_size"], TensorType[
+        "batch_size", "ensemble_size", "height", "width", "fields"]],
+                             verification: Union[TensorType["batch", "data_size"], TensorType[
+                                 "batch_size", "height", "width", "fields"]]) -> TensorType[float]:
+        """We estimate the score for all the scoring rules in self.scoring_rule_list,
+        multiply with the corresponding weight in self.weight_list and sum them"""
+
+        # for implementation
+        # sr_tot = 0
+        # for i in range(self.n_srs):
+        #     sr_tot += self.scoring_rule_list[i].estimate_score_batch(forecast, verification) * self.weight_list[i]
+
+        # map implementation: a bit faster
+        def _compute_sr(sr, weight):
+            return sr.estimate_score_batch(forecast, verification) * weight
+
+        sr_tot_2 = sum(list(map(_compute_sr, self.scoring_rule_list, self.weight_list)))
+
+        return sr_tot_2
+
+
+class PatchedScoringRule(ScoringRule):
+    # todo next iteration: allow to use different scoring rules for each patch. This can be useful for instance for
+    #  the kernel SR, you can use different bandwidths for the different patches
+
+    def __init__(self, scoring_rule: ScoringRule, masks: TensorType["n_patches", "data_size", bool]):
+        """
+        When you call the `estimate_score_batch` method, the provided scoring_rule is computed on all patches
+        defined by the masks and then summed over.
+
+        :param scoring_rule: an instance of ScoringRule class.
+        :param masks: Torch tensor, in which the first dimension denotes the number of patches and the second dimension
+         the size of the data. Each entry is True or False according to whether that data component is part of
+         the corresponding patch.
+        """
+        self.scoring_rule = scoring_rule
+        self.masks = masks
+
+    def estimate_score_batch(self, forecast: TensorType["batch", "ensemble_size", "data_size"],
+                             verification: TensorType["batch", "data_size"]) -> TensorType[float]:
+        """
+        """
+
+        # for implementation
+        sr_tot = 0
+        for i in range(self.masks.shape[0]):
+            sr_tot += self.scoring_rule.estimate_score_batch(forecast[:, :, self.masks[i]],
+                                                             verification[:, self.masks[i]])
+
+        # map implementation: a bit slower, even with many masks
+        # def _compute_sr(mask):
+        #     return self.scoring_rule.estimate_score_batch(forecast[:, :, mask], verification[:, mask])
+        #
+        # sr_tot_2 = sum(list(map(_compute_sr, self.masks)))
+
+        return sr_tot
+
+
 class ScoringRulesForImages(ScoringRule):
     def __init__(self, scoring_rule: ScoringRule):
         """
@@ -370,13 +459,10 @@ class ScoringRulesForImages(ScoringRule):
         """
         self.scoring_rule = scoring_rule
 
-    def estimate_score_batch(self, forecast, verification):
+    def estimate_score_batch(self, forecast: TensorType["batch_size", "ensemble_size", "height", "width", "fields"],
+                             verification: TensorType["batch_size", "height", "width", "fields"]) -> TensorType[float]:
         """
         """
-        assert forecast.shape[0] == verification.shape[0]
-        assert len(forecast.shape) == 5
-        assert len(verification.shape) == 4
-
         forecast = forecast.flatten(2, -1)
         verification = verification.flatten(1, -1)
 

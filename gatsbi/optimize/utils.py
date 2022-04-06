@@ -304,3 +304,48 @@ def estimate_bandwidth(
         return_list.append(torch.mean(distances))
 
     return return_list[0] if len(return_list) == 1 else return_list
+
+
+def estimate_bandwidth_patched(
+        parameters: Union[TensorType["batch", "theta_size"], TensorType["batch", "fields", "height", "width"]],
+        patch_step, patch_size, data_is_image=False):
+    """Estimate the bandwidth for the` gaussian kernel in KernelSR. parameters has shape ["batch", "theta_size"] and
+    return_values is a list of strings."""
+
+    # first need to obtain the patches:
+    if not data_is_image:
+        parameters = parameters.unfold(1, patch_size, patch_step)
+        parameters = parameters.permute(1, 0, 2)
+        #  parameters:    num_windows x batch x patch_size
+    else:
+        parameters = parameters.permute(0, 2, 3, 1)
+
+        # Tensor.unfold replaces the unfolded dimension with the number of windows, and adds a last dimension with the
+        # content of each window
+        # dimension, size, step
+        parameters = parameters.unfold(1, patch_size, patch_step)
+        parameters = parameters.unfold(2, patch_size, patch_step)
+        #  parameters: batch x num_windows_height x num_windows_width x fields x patch_size x patch_size
+
+        # now make parameters: TensorType["batch", "num_windows", "data_size"]
+        # num_windows = num_windows_height x num_windows_width
+        # data_size = fields x patch_size x patch_size
+        # fields x patch_size x patch_size make the new data_size
+        parameters = parameters.flatten(1, 2).flatten(2, -1)
+        parameters = parameters.permute(1, 0, 2)
+        #  parameters:    num_windows x batch x patch_size
+
+    num_windows, batch_size, theta_size = parameters.shape
+    if batch_size in [0, 1]:
+        raise RuntimeError("Batch size is either 0 or 1, so cannot estimate bandwidth")
+
+    distances_windows = torch.zeros(num_windows)
+    for window_id in range(num_windows):
+        distances = torch.cdist(parameters[window_id], parameters[window_id])
+        # discard the diagonal elements, as they are 0:
+        distances = distances[~torch.eye(batch_size, dtype=bool)].flatten()
+
+        distances_windows[window_id] = torch.median(distances)
+    print(distances_windows)
+
+    return torch.median(distances_windows)

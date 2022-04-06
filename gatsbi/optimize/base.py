@@ -12,7 +12,8 @@ import gatsbi.utils as utils
 from gatsbi.networks import BaseNetwork, Discriminator, Generator
 
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
-                    _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth)
+                    _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth,
+                    estimate_bandwidth_patched)
 from ..utils import EnergyScore, KernelScore, ScoringRulesForImages, PatchedScoringRule
 
 
@@ -399,7 +400,11 @@ class BaseSR:
             if training_opts["hold_out"] == 0:
                 raise RuntimeError("No hold out samples, so it is impossible to set bandwidth")
             theta_test, _ = self.dataloader[str(0)].dataset.inputs_test
-            self.kernel_bandwidth = estimate_bandwidth(theta_test, data_is_image=data_is_image)
+            if patched_sr:
+                self.kernel_bandwidth = estimate_bandwidth_patched(theta_test, patch_step, patch_size,
+                                                                   data_is_image=data_is_image)
+            else:
+                self.kernel_bandwidth = estimate_bandwidth(theta_test, data_is_image=data_is_image)
             print("Estimated bandwidth: ", self.kernel_bandwidth)
             self.scoring_rule = KernelScore(sigma=self.kernel_bandwidth, **sr_kwargs)
             # save the kernel bandwidth in the logger

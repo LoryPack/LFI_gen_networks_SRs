@@ -32,9 +32,10 @@ def _fwd_pass_prior_and_simulator(sim_num):
 
 def main(args):
     """Sample function."""
+    start = time.time()
     data = []
     # Keep track of simulations
-    simulation_number = np.arange(args.num_simulations, dtype=np.int)
+    simulation_number = np.arange(args.num_simulations, dtype=int)
 
     # simulate in parallel with mpi
     with pool.Pool(args.num_processes) as pool_procs:
@@ -55,6 +56,7 @@ def main(args):
         seeds_z=[dat[5] for dat in data[0]],
         sim_ind=[dat[6] for dat in data[0]],
     )
+    print(f"It took {time.time() - start:.2f} seconds")
 
 
 if __name__ == "__main__":

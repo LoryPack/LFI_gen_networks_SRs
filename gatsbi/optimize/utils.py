@@ -278,9 +278,11 @@ def _stop_training(opt):
     return False
 
 
-def estimate_bandwidth(parameters, return_values=["median"]):
+def estimate_bandwidth(parameters, return_values=["median"], data_is_image=False):
     """Estimate the bandwidth for the` gaussian kernel in KernelSR. parameters has shape ["batch", "theta_size"] and
     return_values is a list of strings."""
+    if data_is_image:
+        parameters = parameters.flatten(start_dim=1)
     batch_size, theta_size = parameters.shape
     if batch_size in [0, 1]:
         raise RuntimeError("Batch size is either 0 or 1, so cannot estimate bandwidth")

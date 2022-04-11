@@ -1,4 +1,4 @@
-batch_size_perc: 0.01
+batch_size_perc: 0.001
 gen_opt_args:
 - 0.0002
 - - 0.5
@@ -6,3 +6,4 @@ gen_opt_args:
 hold_out_perc: 0.2
 log_dataloader: False
 sample_seed: 42
+num_training_simulations: 800000

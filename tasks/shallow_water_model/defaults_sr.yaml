@@ -7,3 +7,4 @@ hold_out_perc: 0.2
 path_to_data: "./shallow_water_data/"
 log_dataloader: False
 sample_seed: 42
+num_training_simulations: 100000

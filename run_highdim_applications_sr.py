@@ -33,7 +33,6 @@ def main(args):
     # Add arguments to defaults
     defaults["scoring_rule"] = args.scoring_rule
     defaults["epochs"] = args.epochs
-    defaults["num_training_simulations"] = args.num_training_simulations
     defaults["num_simulations_generator"] = args.num_simulations_generator
     defaults["patched_sr"] = args.patched_sr
     defaults["patch_step"] = args.patch_step
@@ -57,8 +56,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_training_simulations) + "_" + str(
-            args.num_simulations_generator)
+        name=args.task_name + "_" + args.scoring_rule + "_" + "_" + str(args.num_simulations_generator)
     )
     config = NSp(**wandb.config)
 
@@ -86,7 +84,8 @@ def main(args):
 
         # Make optimiser
         print("Making optimiser")
-        batch_size = min(1000, int(config.batch_size_perc * args.num_training_simulations))
+        batch_size = min(1000, int(config.batch_size_perc * config.num_training_simulations))
+        print("Batch size", batch_size)
         if args.task_name == "camera_model":
             path_to_data = "results/EMNIST_data"
             prior = application.Prior(path_to_data=path_to_data, few_samples=True)
@@ -97,7 +96,7 @@ def main(args):
         print("Making dataloaders")
         if hasattr(application, "get_dataloader"):
             dataloader = application.get_dataloader(
-                batch_size, int(config.hold_out_perc * args.num_training_simulations), config.path_to_data
+                batch_size, int(config.hold_out_perc * config.num_training_simulations), config.path_to_data
             )
 
         # default values of patch size and step:
@@ -119,9 +118,9 @@ def main(args):
             patch_size=args.patch_size,
             round_number=0,
             training_opts={
-                "num_simulations": args.num_training_simulations,
+                "num_simulations": config.num_training_simulations,
                 "sample_seed": config.sample_seed,
-                "hold_out": int(config.hold_out_perc * args.num_training_simulations),
+                "hold_out": int(config.hold_out_perc * config.num_training_simulations),
                 "batch_size": batch_size,
                 "log_dataloader": True,
             },
@@ -165,7 +164,6 @@ if __name__ == "__main__":
     parser.add_argument("--group_name", type=str, default=None)
     parser.add_argument("--scoring_rule", type=str, default="energy_score", choices=["energy_score", "kernel_score"])
     parser.add_argument("--epochs", type=int, default=20000)
-    parser.add_argument("--num_training_simulations", type=int, default=10000)
     parser.add_argument("--num_simulations_generator", type=int, default=3)
     parser.add_argument("--multi_gpu", type=bool, default=False)
     parser.add_argument("--resume", type=bool, default=False)

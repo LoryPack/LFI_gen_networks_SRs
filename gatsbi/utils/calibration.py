@@ -34,13 +34,15 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
         generator, n_simulations=n_generator_simulations)  # number of generated theta per simulation
 
     gen_wrapped.eval()
+    device = list(gen_wrapped.parameters())[0].device
 
     if rej_thresh is None:
+        test_obs = test_obs.to(device)
         test_theta_fake_all_obs = gen_wrapped(test_obs, n_simulations=n_generator_simulations)
     else:
         test_theta_fake_all_obs = []
         for obs in test_obs:
-            obs = obs.unsqueeze(0)
+            obs = obs.unsqueeze(0).to(device)
 
             test_theta_fake_obs = []
             sample_size = n_generator_simulations

@@ -438,6 +438,7 @@ class BaseSR:
 
         # Prepare data
         obs = obs.to(self.device)
+        theta = theta.to(self.device)
         # generate the fake values of theta. Notice that here we generate multiple for each obs.
         theta_fake = self._fwd_pass_generator(obs)
 

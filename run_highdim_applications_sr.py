@@ -133,7 +133,7 @@ def main(args):
 
         # Train model
         print("Training")
-        opt.train(args.epochs, 100, start_early_stopping_after_epoch=1000)
+        opt.train(args.epochs, 50, start_early_stopping_after_epoch=1000)
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.

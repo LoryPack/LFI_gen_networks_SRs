@@ -155,11 +155,11 @@ def main(args):
                 batch_size, 0, config.path_to_data, test=True, return_data=True
             )
             test_theta_fake, test_theta = generate_test_set_for_calibration_from_obs(test_theta, test_obs, gen,
-                                                                                     n_test_samples=100,
+                                                                                     n_test_samples=1000,
                                                                                      n_generator_simulations=1000,
                                                                                      data_is_image=args.task_name == "camera_model")
         else:
-            test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
+            test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=1000,
                                                                             n_generator_simulations=1000,
                                                                             sample_seed=config.sample_seed,
                                                                             data_is_image=args.task_name == "camera_model")

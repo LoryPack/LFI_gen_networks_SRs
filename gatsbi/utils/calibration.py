@@ -36,37 +36,38 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
     gen_wrapped.eval()
     device = list(gen_wrapped.parameters())[0].device
 
-    if rej_thresh is None:
-        test_obs = test_obs.to(device)
-        test_theta_fake_all_obs = gen_wrapped(test_obs, n_simulations=n_generator_simulations)
-    else:
-        test_theta_fake_all_obs = []
-        for obs in test_obs:
-            obs = obs.unsqueeze(0).to(device)
+    with torch.no_grad():
+        if rej_thresh is None:
+            test_obs = test_obs.to(device)
+            test_theta_fake_all_obs = gen_wrapped(test_obs, n_simulations=n_generator_simulations)
+        else:
+            test_theta_fake_all_obs = []
+            for obs in test_obs:
+                obs = obs.unsqueeze(0).to(device)
 
-            test_theta_fake_obs = []
-            sample_size = n_generator_simulations
-            while sample_size > 0:
-                test_theta_fake = gen_wrapped(obs, n_simulations=sample_size)
-                # print('rej_thresh', rej_thresh)
-                # print(test_theta_fake)
-                # print(torch.abs(test_theta_fake) < rej_thresh)
-                inds = torch.all(torch.abs(test_theta_fake) < rej_thresh, -1).reshape(-1)
-                ok_elements = inds.sum()
-                if ok_elements > 0:
-                    sample_size -= ok_elements
-                    test_theta_fake_obs.append(test_theta_fake[0][inds])
-            test_theta_fake_obs = torch.concat(test_theta_fake_obs, 0)
+                test_theta_fake_obs = []
+                sample_size = n_generator_simulations
+                while sample_size > 0:
+                    test_theta_fake = gen_wrapped(obs, n_simulations=sample_size)
+                    # print('rej_thresh', rej_thresh)
+                    # print(test_theta_fake)
+                    # print(torch.abs(test_theta_fake) < rej_thresh)
+                    inds = torch.all(torch.abs(test_theta_fake) < rej_thresh, -1).reshape(-1)
+                    ok_elements = inds.sum()
+                    if ok_elements > 0:
+                        sample_size -= ok_elements
+                        test_theta_fake_obs.append(test_theta_fake[0][inds])
+                test_theta_fake_obs = torch.concat(test_theta_fake_obs, 0)
 
-            test_theta_fake_all_obs.append(test_theta_fake_obs)
+                test_theta_fake_all_obs.append(test_theta_fake_obs)
 
-        test_theta_fake_all_obs = torch.stack(test_theta_fake_all_obs, 0)
+            test_theta_fake_all_obs = torch.stack(test_theta_fake_all_obs, 0)
 
-    # flatten the test set if it is image:
-    if data_is_image:
-        test_theta_fake_all_obs = test_theta_fake_all_obs.squeeze(1)
-        test_theta = test_theta.flatten(1, -1)
-        test_theta_fake_all_obs = test_theta_fake_all_obs.flatten(2, -1)
+        # flatten the test set if it is image:
+        if data_is_image:
+            test_theta_fake_all_obs = test_theta_fake_all_obs.squeeze(1)
+            test_theta = test_theta.flatten(1, -1)
+            test_theta_fake_all_obs = test_theta_fake_all_obs.flatten(2, -1)
 
     return test_theta_fake_all_obs, test_theta
 

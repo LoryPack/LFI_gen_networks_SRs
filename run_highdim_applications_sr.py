@@ -88,7 +88,7 @@ def main(args):
         print("Batch size", batch_size)
         if args.task_name == "camera_model":
             path_to_data = "results/EMNIST_data"
-            prior = application.Prior(path_to_data=path_to_data, few_samples=True)
+            prior = application.Prior(path_to_data=path_to_data, few_samples=False)
         else:
             prior = application.Prior()
         simulator = application.Simulator()

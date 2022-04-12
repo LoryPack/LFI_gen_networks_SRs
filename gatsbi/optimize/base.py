@@ -402,11 +402,11 @@ class BaseSR:
             if training_opts["hold_out"] == 0:
                 raise RuntimeError("No hold out samples, so it is impossible to set bandwidth")
             theta_test, _ = self.dataloader[str(0)].dataset.inputs_test
-            self.kernel_bandwidth = estimate_bandwidth(theta_test, data_is_image=data_is_image)
+            self.kernel_bandwidth = estimate_bandwidth(theta_test[0:self.training_opts.batch_size], data_is_image=data_is_image)
             print("Estimated bandwidth: ", self.kernel_bandwidth)
             self.scoring_rule = KernelScore(sigma=self.kernel_bandwidth, **sr_kwargs)
             if patched_sr:
-                self.kernel_bandwidth_patched = estimate_bandwidth_patched(theta_test, patch_step, patch_size,
+                self.kernel_bandwidth_patched = estimate_bandwidth_patched(theta_test[0:self.training_opts.batch_size], patch_step, patch_size,
                                                                            data_is_image=data_is_image)
                 self.scoring_rule_patched = KernelScore(sigma=self.kernel_bandwidth_patched, **sr_kwargs)
             # save the kernel bandwidth in the logger

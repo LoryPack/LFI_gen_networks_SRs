@@ -14,7 +14,7 @@ from gatsbi.networks import BaseNetwork, Discriminator, Generator
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
                     _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth,
                     estimate_bandwidth_patched)
-from ..utils import EnergyScore, KernelScore, ScoringRulesForImages, PatchedScoringRule
+from ..utils import EnergyScore, KernelScore, ScoringRulesForImages, PatchedScoringRule, SumScoringRules
 
 
 class Base:
@@ -394,33 +394,48 @@ class BaseSR:
         # instantiate scoring rule
         if scoring_rule == "energy_score":
             self.scoring_rule = EnergyScore(**sr_kwargs)
+            if patched_sr:
+                self.scoring_rule_patched = EnergyScore(**sr_kwargs)
         elif scoring_rule == "kernel_score":
             # we set here round_number=0. This means we use prior samples to set bandwidth even in the sequential
             # approaches. However need to think better about it, as we do not use them right now
             if training_opts["hold_out"] == 0:
                 raise RuntimeError("No hold out samples, so it is impossible to set bandwidth")
             theta_test, _ = self.dataloader[str(0)].dataset.inputs_test
-            if patched_sr:
-                self.kernel_bandwidth = estimate_bandwidth_patched(theta_test, patch_step, patch_size,
-                                                                   data_is_image=data_is_image)
-            else:
-                self.kernel_bandwidth = estimate_bandwidth(theta_test, data_is_image=data_is_image)
+            self.kernel_bandwidth = estimate_bandwidth(theta_test, data_is_image=data_is_image)
             print("Estimated bandwidth: ", self.kernel_bandwidth)
             self.scoring_rule = KernelScore(sigma=self.kernel_bandwidth, **sr_kwargs)
+            if patched_sr:
+                self.kernel_bandwidth_patched = estimate_bandwidth_patched(theta_test, patch_step, patch_size,
+                                                                           data_is_image=data_is_image)
+                self.scoring_rule_patched = KernelScore(sigma=self.kernel_bandwidth_patched, **sr_kwargs)
             # save the kernel bandwidth in the logger
             if self.logger is not None:
                 self.logger.log({"kernel_bandwidth": self.kernel_bandwidth})
         else:
             raise ValueError("scoring_rule must be 'energy_score' or 'kernel_score'")
+        if data_is_image:
+            self.scoring_rule = ScoringRulesForImages(self.scoring_rule)
         if patched_sr:
-            self.scoring_rule = PatchedScoringRule(
-                self.scoring_rule,
+            # define the weight list
+            if data_is_image:
+                n_patches = ((28 - patch_size) / patch_step + 1) ** 2
+                if scoring_rule == "kernel_score":
+                    self.weight_list = [1 / n_patches, 1]
+                else:
+                    self.weight_list = [(28 / patch_size) ** 2 / n_patches, 1]
+            else:
+                n_patches = (100 - patch_size) / patch_step + 1
+                if scoring_rule == "kernel_score":
+                    self.weight_list = [1 / n_patches, 1]
+                else:
+                    self.weight_list = [100 / (patch_size * n_patches), 1]
+            self.scoring_rule = SumScoringRules([PatchedScoringRule(
+                self.scoring_rule_patched,
                 patch_step=patch_step,
                 patch_size=patch_size,
                 data_is_image=data_is_image,
-            )
-        elif data_is_image:
-            self.scoring_rule = ScoringRulesForImages(self.scoring_rule)
+            ), self.scoring_rule], weight_list=self.weight_list)
 
         # Logging progress
         if self.logger is not None:

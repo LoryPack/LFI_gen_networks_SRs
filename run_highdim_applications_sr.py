@@ -45,6 +45,10 @@ def main(args):
     # Get application module
     application = importlib.import_module("gatsbi.task_utils.%s" % args.task_name)
 
+    name = args.task_name + "_" + args.scoring_rule + "_" + str(args.num_simulations_generator)
+    if args.patched_sr:
+        name += f"_patched_{args.patch_step}_{args.patch_size}"
+
     # Make a logger
     print("Making logger")
     makedirs(join("results", args.task_name), exist_ok=True)
@@ -56,7 +60,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_simulations_generator)
+        name=name
     )
     config = NSp(**wandb.config)
 

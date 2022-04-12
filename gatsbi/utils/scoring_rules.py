@@ -392,9 +392,9 @@ class SumScoringRules(ScoringRule):
         self.weight_list = weight_list
 
     def estimate_score_batch(self, forecast: Union[TensorType["batch", "ensemble_size", "data_size"], TensorType[
-        "batch_size", "ensemble_size", "height", "width", "fields"]],
+        "batch_size", "ensemble_size", "fields", "height", "width"]],
                              verification: Union[TensorType["batch", "data_size"], TensorType[
-                                 "batch_size", "height", "width", "fields"]]) -> TensorType[float]:
+                                 "batch_size", "fields", "height", "width"]]) -> TensorType[float]:
         """We estimate the score for all the scoring rules in self.scoring_rule_list,
         multiply with the corresponding weight in self.weight_list and sum them"""
 

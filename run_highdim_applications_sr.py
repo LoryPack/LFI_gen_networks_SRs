@@ -1,15 +1,16 @@
 import argparse
+import contextlib
 import importlib
 from argparse import Namespace as NSp
 from os import makedirs
 from os.path import join
 
 import torch
-import wandb
 import yaml
 from torch import nn
-
 from typeguard.importhook import install_import_hook
+
+import wandb
 
 # comment these out when deploying:
 install_import_hook('gatsbi.utils')
@@ -37,6 +38,7 @@ def main(args):
     defaults["patched_sr"] = args.patched_sr
     defaults["patch_step"] = args.patch_step
     defaults["patch_size"] = args.patch_size
+    use_wandb = not args.no_wandb
 
     # Update defaults
     if len(unknown_args) > 0:
@@ -52,19 +54,23 @@ def main(args):
     # Make a logger
     print("Making logger")
     makedirs(join("results", args.task_name), exist_ok=True)
-    wandb.init(
-        project=args.project_name,
-        group=args.group_name,
-        id=args.run_id,
-        resume=args.resume,
-        config=defaults,
-        notes="",
-        dir=join("results", args.task_name),
-        name=name
-    )
-    config = NSp(**wandb.config)
+    if use_wandb:
+        wandb.init(
+            project=args.project_name,
+            group=args.group_name,
+            id=args.run_id,
+            resume=args.resume,
+            config=defaults,
+            notes="",
+            dir=join("results", args.task_name),
+            name=name
+        )
+        config = NSp(**wandb.config)
+        run = wandb.run
+    else:
+        config = NSp(**defaults)
+        run = contextlib.nullcontext()
 
-    run = wandb.run
     with run:
         print("Making networks")
         # Make generator and discriminator
@@ -128,7 +134,7 @@ def main(args):
                 "batch_size": batch_size,
                 "log_dataloader": True,
             },
-            logger=run,
+            logger=run if use_wandb else None,
             data_is_image=args.task_name == "camera_model",
         )
 
@@ -158,7 +164,8 @@ def main(args):
 
         opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True))
 
-    wandb.join()
+    if use_wandb:
+        wandb.join()
 
 
 if __name__ == "__main__":
@@ -169,6 +176,7 @@ if __name__ == "__main__":
     parser.add_argument("--scoring_rule", type=str, default="energy_score", choices=["energy_score", "kernel_score"])
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--num_simulations_generator", type=int, default=3)
+    parser.add_argument("--no_wandb", action="store_true")
     parser.add_argument("--multi_gpu", type=bool, default=False)
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--run_id", type=str, default=None)

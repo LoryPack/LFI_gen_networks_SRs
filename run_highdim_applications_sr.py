@@ -56,7 +56,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + args.scoring_rule + "_" + "_" + str(args.num_simulations_generator)
+        name=args.task_name + "_" + args.scoring_rule + "_" + str(args.num_simulations_generator)
     )
     config = NSp(**wandb.config)
 

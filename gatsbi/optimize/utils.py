@@ -164,7 +164,8 @@ def _log_metrics(opt):
 
 def _log_metrics_sr(opt, batch_size=1000):
     """
-    Log metrics and figures. Also do early stopping if needed
+    Log metrics and figures. Also do early stopping if needed. It does not compute gradients and similar as it leads
+    to memory overflow on the GPU
 
     Args:
         opt: Optimize object.
@@ -181,28 +182,29 @@ def _log_metrics_sr(opt, batch_size=1000):
     loss_gen = 0
     batch_id = 0
     n_test_samples = obs_test.shape[0]
-    while batch_size * batch_id < n_test_samples:
-        theta_fake_cv = opt._fwd_pass_generator(obs_test[batch_size * batch_id:batch_size * (batch_id + 1)])
-        # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
+    with torch.no_grad():
+        while batch_size * batch_id < n_test_samples:
+            theta_fake_cv = opt._fwd_pass_generator(obs_test[batch_size * batch_id:batch_size * (batch_id + 1)])
+            # theta_fake_cv_detach = theta_fake_cv.clone().detach().reshape(*list(theta_test.shape))
 
-        loss_gen += opt.scoring_rule.estimate_score_batch(theta_fake_cv,
-                                                          theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
-        batch_id += 1
+            loss_gen += opt.scoring_rule.estimate_score_batch(theta_fake_cv,
+                                                              theta_test[batch_size * batch_id:batch_size * (batch_id + 1)])
+            batch_id += 1
 
-    loss_gen /= batch_id
+        loss_gen /= batch_id
 
-    loss_gen.backward(retain_graph=False)
+    # loss_gen.backward(retain_graph=False)
 
-    gen_grads = torch.sqrt(
-        sum([torch.norm(p.grad) ** 2 for p in opt.generator.parameters()])
-    )
+    # gen_grads = torch.sqrt(
+    #     sum([torch.norm(p.grad) ** 2 for p in opt.generator.parameters()])
+    # )
     if opt.logger is not None:
         step = opt.logger.step
     else:
         step = len(opt.df)
     opt.df.loc[step] = {
         "gen_loss": loss_gen.mean().item(),
-        "gen_grad": gen_grads.item(),
+        # "gen_grad": gen_grads.item(),
         "global_step": opt.epoch_ct,
     }
     torch.cuda.empty_cache()

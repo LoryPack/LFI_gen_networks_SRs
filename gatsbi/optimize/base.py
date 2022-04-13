@@ -9,7 +9,7 @@ from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adam
 from tqdm import tqdm
 import gatsbi.utils as utils
-from gatsbi.networks import BaseNetwork, Discriminator, Generator
+from gatsbi.networks import BaseNetwork, Discriminator, Generator, WrapGenMultipleSimulations
 
 from .utils import (_check_data_bank, _log_metrics, _make_checkpoint, _sample,
                     _stop_training, _log_metrics_sr, _make_checkpoint_sr, estimate_bandwidth,
@@ -402,11 +402,13 @@ class BaseSR:
             if training_opts["hold_out"] == 0:
                 raise RuntimeError("No hold out samples, so it is impossible to set bandwidth")
             theta_test, _ = self.dataloader[str(0)].dataset.inputs_test
-            self.kernel_bandwidth = estimate_bandwidth(theta_test[0:self.training_opts.batch_size], data_is_image=data_is_image)
+            self.kernel_bandwidth = estimate_bandwidth(theta_test[0:self.training_opts.batch_size],
+                                                       data_is_image=data_is_image)
             print("Estimated bandwidth: ", self.kernel_bandwidth)
             self.scoring_rule = KernelScore(sigma=self.kernel_bandwidth, **sr_kwargs)
             if patched_sr:
-                self.kernel_bandwidth_patched = estimate_bandwidth_patched(theta_test[0:self.training_opts.batch_size], patch_step, patch_size,
+                self.kernel_bandwidth_patched = estimate_bandwidth_patched(theta_test[0:self.training_opts.batch_size],
+                                                                           patch_step, patch_size,
                                                                            data_is_image=data_is_image)
                 self.scoring_rule_patched = KernelScore(sigma=self.kernel_bandwidth_patched, **sr_kwargs)
             # save the kernel bandwidth in the logger
@@ -514,12 +516,22 @@ class BaseSR:
                 # print("Logging metrics")
                 test_loss = _log_metrics_sr(self, batch_size=self.training_opts.batch_size)
                 test_loss_list.append(test_loss)
+                # store the state dict of the generator
+                if isinstance(self.generator, WrapGenMultipleSimulations):
+                    generator_state_dict = self.generator.net.state_dict()
+                else:
+                    generator_state_dict = self.generator.state_dict()
                 if self.logger is not None:
                     _make_checkpoint_sr(self, init=False)
                 if len(test_loss_list) > 1 and self.epoch_ct >= start_early_stopping_after_epoch:
                     if test_loss_list[-2] < test_loss_list[-1]:
                         # stop training
                         print("Early stopped at epoch", epoch)
+                        # reset the network to the previous state dict:
+                        if isinstance(self.generator, WrapGenMultipleSimulations):
+                            self.generator.net.load_state_dict(generator_state_dict)
+                        else:
+                            self.generator.load_state_dict(generator_state_dict)
                         break
 
         if self.logger is not None:

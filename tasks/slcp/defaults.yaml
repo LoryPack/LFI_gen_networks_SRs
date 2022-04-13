@@ -49,5 +49,5 @@ max_norm_gen: .inf
 net_type: "mlp"
 # net_type: "nsf"
 num_simulations: 10000
-sample_seed: None
+sample_seed: 42
 stop_thresh: 0.001

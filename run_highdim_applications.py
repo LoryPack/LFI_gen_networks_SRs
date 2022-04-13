@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import importlib
 from argparse import Namespace as NSp
 from os import makedirs
@@ -30,6 +31,9 @@ def main(args):
     with open(join("tasks", args.task_name, "defaults.yaml"), "r") as f:
         defaults = yaml.load(f, Loader=yaml.Loader)
 
+    defaults["epochs"] = args.epochs
+    use_wandb = not args.no_wandb
+
     # Update defaults
     if len(unknown_args) > 0:
         defaults = _update_defaults(defaults, unknown_args)
@@ -40,19 +44,23 @@ def main(args):
     # Make a logger
     print("Making logger")
     makedirs(join("results", args.task_name), exist_ok=True)
-    wandb.init(
-        project=args.project_name,
-        group=args.group_name,
-        id=args.run_id,
-        resume=args.resume,
-        config=defaults,
-        notes="",
-        dir=join("results", args.task_name),
-        name=args.task_name + "_GAN_" + str(defaults["num_simulations"])
-    )
-    config = NSp(**wandb.config)
+    if use_wandb:
+        wandb.init(
+            project=args.project_name,
+            group=args.group_name,
+            id=args.run_id,
+            resume=args.resume,
+            config=defaults,
+            notes="",
+            dir=join("results", args.task_name),
+            name=args.task_name + "_GAN_" + str(defaults["num_simulations"])
+        )
+        config = NSp(**wandb.config)
+        run = wandb.run
+    else:
+        config = NSp(**defaults)
+        run = contextlib.nullcontext()
 
-    run = wandb.run
     with run:
         print("Making networks")
         # Make generator and discriminator
@@ -113,7 +121,7 @@ def main(args):
                     "unroll_steps": config.unroll_steps,
                     "log_dataloader": config.log_dataloader,
                 },
-                logger=run,
+                logger=run if use_wandb else None,
             )
         else:
             opt = Opt(
@@ -136,7 +144,7 @@ def main(args):
                     "batch_size": batch_size,
                     "log_dataloader": config.log_dataloader,
                 },
-                logger=run,
+                logger=run if use_wandb else None,
             )
 
         if args.resume:
@@ -165,12 +173,15 @@ def main(args):
                                                                             data_is_image=args.task_name == "camera_model")
         fig_filename = join("results", args.task_name) + "/GAN_" + str(defaults["num_simulations"])
 
-        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
-                                                   sbc_lines_kwargs={"name": args.scoring_rule,
-                                                                     "filename": fig_filename + "_sbc_lines.png"},
-                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"}))
+        res = compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
+                                    sbc_lines_kwargs={"name": args.scoring_rule,
+                                                      "filename": fig_filename + "_sbc_lines.png"},
+                                    sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"})
+        if use_wandb:
+            opt.logger.log(res)
 
-    wandb.join()
+    if use_wandb:
+        wandb.join()
 
 
 if __name__ == "__main__":
@@ -179,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument("--task_name", type=str)
     parser.add_argument("--group_name", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=20000)
-    parser.add_argument("--num_training_simulations", type=int, default=10000)
+    parser.add_argument("--no_wandb", action="store_true")
     parser.add_argument("--multi_gpu", type=bool, default=False)
     parser.add_argument("--resume", type=bool, default=False)
     parser.add_argument("--run_id", type=str, default=None)

@@ -1,4 +1,4 @@
-batch_size_perc: 0.01
+batch_size_perc: 0.001
 dis_iter: 1
 dis_opt_args:
 - 0.0002
@@ -13,6 +13,6 @@ hold_out: 100
 loss: cross_entropy
 max_norm_dis: .01
 max_norm_gen: .01
-num_simulations: 1000000
+num_simulations: 800000
 log_dataloader: False
 sample_seed: 42

@@ -25,9 +25,11 @@ def generate_test_set_for_calibration(prior, simulator, generator, n_test_sample
 
 
 def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, n_test_samples, n_generator_simulations,
-                                               rej_thresh=None, data_is_image=False):
+                                               batch_size=None, rej_thresh=None, data_is_image=False):
     test_theta = test_theta[0:n_test_samples]
     test_obs = test_obs[0:n_test_samples]
+    if batch_size is None:
+        batch_size = n_test_samples
 
     # need to generate synthetic thetas, some of them for each of the observation
     gen_wrapped = WrapGenMultipleSimulations(
@@ -39,7 +41,15 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
     with torch.no_grad():
         if rej_thresh is None:
             test_obs = test_obs.to(device)
-            test_theta_fake_all_obs = gen_wrapped(test_obs, n_simulations=n_generator_simulations)
+            # do this by batches otherwise you get a memory error
+            batch_id = 0
+            test_theta_fake_all_obs = []
+            while batch_size * batch_id < n_test_samples:
+                test_theta_fake_all_obs.append(gen_wrapped(test_obs[batch_size * batch_id:batch_size * (batch_id + 1)],
+                                                      n_simulations=n_generator_simulations))
+
+                batch_id += 1
+            test_theta_fake_all_obs = torch.concat(test_theta_fake_all_obs, 0)
         else:
             test_theta_fake_all_obs = []
             for obs in test_obs:
@@ -198,7 +208,7 @@ def make_sbc_plot_lines(ranks, fig=None, ax=None, name="", color="r", show=False
     upper = [binom(N, p=p).ppf(0.995) for p in hbb]
 
     # need to fix this by hand
-    lower[-1] =upper[-1]
+    lower[-1] = upper[-1]
 
     # Plot CDF
     if ax is None:

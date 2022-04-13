@@ -48,7 +48,7 @@ def main(args):
         config=defaults,
         notes="",
         dir=join("results", args.task_name),
-        name=args.task_name + "_" + str(defaults["num_simulations"])
+        name=args.task_name + "_GAN_" + str(defaults["num_simulations"])
     )
     config = NSp(**wandb.config)
 
@@ -163,8 +163,12 @@ def main(args):
                                                                             n_generator_simulations=1000,
                                                                             sample_seed=config.sample_seed,
                                                                             data_is_image=args.task_name == "camera_model")
+        fig_filename = join("results", args.task_name) + "/GAN_" + str(defaults["num_simulations"])
 
-        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True))
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
+                                                   sbc_lines_kwargs={"name": args.scoring_rule,
+                                                                     "filename": fig_filename + "_sbc_lines.png"},
+                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"}))
 
     wandb.join()
 

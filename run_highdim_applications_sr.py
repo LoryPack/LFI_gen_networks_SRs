@@ -162,7 +162,15 @@ def main(args):
                                                                             sample_seed=config.sample_seed,
                                                                             data_is_image=args.task_name == "camera_model")
 
-        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True))
+        fig_filename = join("results", args.task_name) + "/" + args.scoring_rule + "_" + str(
+            args.num_simulations_generator)
+        if args.patched_sr:
+            fig_filename += f"_patched_{args.patch_step}_{args.patch_size}"
+
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
+                                                   sbc_lines_kwargs={"name": args.scoring_rule,
+                                                                     "filename": fig_filename + "_sbc_lines.png"},
+                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"}))
 
     if use_wandb:
         wandb.join()

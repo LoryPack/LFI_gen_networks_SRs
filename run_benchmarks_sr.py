@@ -141,12 +141,18 @@ def main(args):
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.
-        test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=100,
+        test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=1000,
                                                                         n_generator_simulations=1000,
                                                                         sample_seed=config.sample_seed,
                                                                         rej_thresh=task.prior_params["high"])
 
-        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True))
+        fig_filename = join("results", args.task_name) + "/" + args.scoring_rule + "_" + str(
+            args.num_training_simulations) + "_" + str(args.num_simulations_generator) + ("_opt" if args.opt else "")
+
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True, sbc_lines=True,
+                                                   sbc_lines_kwargs={"name": args.scoring_rule,
+                                                                     "filename": fig_filename + "_sbc_lines.png"},
+                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"}))
 
         wandb.join()
 

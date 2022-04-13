@@ -138,7 +138,7 @@ def make_sbc_plot_histogram(ranks, param_names=None, bins=20,
     N, ndim = ranks.shape
 
     if param_names is None:
-        param_names = [r"$\theta_{}$".format(i) for i in range(ndim)]
+        param_names = [r"$\theta_{}$".format(i + 1) for i in range(ndim)]
 
     # Prepare figure
     if len(param_names) >= 6:
@@ -159,7 +159,6 @@ def make_sbc_plot_histogram(ranks, param_names=None, bins=20,
 
     # Plot histograms
     for j in range(len(param_names)):
-
         # Add interval
         axarr[j].axhspan(endpoints[0], endpoints[1], facecolor='gray', alpha=0.3)
         axarr[j].axhline(np.mean(endpoints), color='gray', zorder=0, alpha=0.5)
@@ -170,8 +169,7 @@ def make_sbc_plot_histogram(ranks, param_names=None, bins=20,
         axarr[j].set_title(param_names[j])
         axarr[j].spines['right'].set_visible(False)
         axarr[j].spines['top'].set_visible(False)
-        if j == 0:
-            axarr[j].set_xlabel('Rank statistic')
+        axarr[j].set_xlabel('Rank statistic')
         axarr[j].get_yaxis().set_ticks([])
 
         f.tight_layout(pad=0.6)
@@ -198,6 +196,9 @@ def make_sbc_plot_lines(ranks, fig=None, ax=None, name="", color="r", show=False
 
     lower = [binom(N, p=p).ppf(0.005) for p in hbb]
     upper = [binom(N, p=p).ppf(0.995) for p in hbb]
+
+    # need to fix this by hand
+    lower[-1] =upper[-1]
 
     # Plot CDF
     if ax is None:

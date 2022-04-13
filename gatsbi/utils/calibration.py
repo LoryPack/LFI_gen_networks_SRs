@@ -46,7 +46,7 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
             test_theta_fake_all_obs = []
             while batch_size * batch_id < n_test_samples:
                 test_theta_fake_all_obs.append(gen_wrapped(test_obs[batch_size * batch_id:batch_size * (batch_id + 1)],
-                                                      n_simulations=n_generator_simulations))
+                                                           n_simulations=n_generator_simulations))
 
                 batch_id += 1
             test_theta_fake_all_obs = torch.concat(test_theta_fake_all_obs, 0)
@@ -238,8 +238,9 @@ def make_sbc_plot_lines(ranks, fig=None, ax=None, name="", color="r", show=False
                     alpha=.5)
 
     # Ticks and axes
-    ax.set_xticks([0, 25, 50])
-    ax.set_xlim([0, 50])
+    ax.set_xticks([0, nbins // 2, nbins])
+    ax.set_xticklabels([0, N // 2, N])
+    ax.set_xlim([0, nbins])
     ax.set_xlabel("Rank")
     ax.set_yticks([0, .5, 1.])
     ax.set_ylim([0., 1.])

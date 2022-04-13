@@ -522,4 +522,5 @@ class BaseSR:
                         print("Early stopped at epoch", epoch)
                         break
 
-        self.logger.log({"early_stop_at_epoch": epoch})
+        if self.logger is not None:
+            self.logger.log({"early_stop_at_epoch": epoch})

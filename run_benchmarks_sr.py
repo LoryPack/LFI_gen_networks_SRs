@@ -149,10 +149,10 @@ def main(args):
         fig_filename = join("results", args.task_name) + "/" + args.scoring_rule + "_" + str(
             args.num_training_simulations) + "_" + str(args.num_simulations_generator) + ("_opt" if args.opt else "")
 
-        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True, sbc_lines=True,
+        opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True,
                                                    sbc_lines_kwargs={"name": args.scoring_rule,
-                                                                     "filename": fig_filename + "_sbc_lines.png"},
-                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"}))
+                                                                     "filename": fig_filename + "_sbc_lines.pdf"},
+                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"}))
 
         wandb.join()
 

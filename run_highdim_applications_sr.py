@@ -170,8 +170,8 @@ def main(args):
 
         res = compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
                                     sbc_lines_kwargs={"name": args.scoring_rule,
-                                                      "filename": fig_filename + "_sbc_lines.png"},
-                                    sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"})
+                                                      "filename": fig_filename + "_sbc_lines.pdf"},
+                                    sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"})
         if use_wandb:
             opt.logger.log(res)
 

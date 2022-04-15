@@ -251,13 +251,13 @@ def main(args):
                                                                         sample_seed=config.sample_seed,
                                                                         rej_thresh=task.prior_params["high"])
 
-        fig_filename = join("results", args.task_name) + "/GAN_" + str(args.num_training_simulations) + "_" + (
+        fig_filename = join("results", args.task_name) + "/GAN_" + str(args.num_training_simulations) + (
             "_opt" if args.opt else "")
 
         opt.logger.log(compute_calibration_metrics(test_theta_fake, test_theta, sbc_hist=True,
-                                                   sbc_lines_kwargs={"name": args.scoring_rule,
-                                                                     "filename": fig_filename + "_sbc_lines.png"},
-                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"}))
+                                                   sbc_lines_kwargs={"name": "GAN",
+                                                                     "filename": fig_filename + "_sbc_lines.pdf"},
+                                                   sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"}))
 
         wandb.join()
 

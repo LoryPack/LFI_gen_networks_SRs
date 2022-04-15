@@ -165,6 +165,7 @@ def main(args):
             test_theta_fake, test_theta = generate_test_set_for_calibration_from_obs(test_theta, test_obs, gen,
                                                                                      n_test_samples=1000,
                                                                                      n_generator_simulations=1000,
+                                                                                     batch_size=100,
                                                                                      data_is_image=args.task_name == "camera_model")
         else:
             test_theta_fake, test_theta = generate_test_set_for_calibration(prior, simulator, gen, n_test_samples=1000,
@@ -174,9 +175,9 @@ def main(args):
         fig_filename = join("results", args.task_name) + "/GAN_" + str(defaults["num_simulations"])
 
         res = compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
-                                    sbc_lines_kwargs={"name": args.scoring_rule,
-                                                      "filename": fig_filename + "_sbc_lines.png"},
-                                    sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.png"})
+                                    sbc_lines_kwargs={"name": "GAN",
+                                                      "filename": fig_filename + "_sbc_lines.pdf"},
+                                    sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"})
         if use_wandb:
             opt.logger.log(res)
 

@@ -20,8 +20,11 @@ def generate_test_set_for_calibration(prior, simulator, generator, n_test_sample
         num_samples=n_test_samples,  # number of samples to use for calibration
     )
 
-    return generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, n_test_samples,
-                                                      n_generator_simulations, rej_thresh, data_is_image)
+    return generate_test_set_for_calibration_from_obs(test_theta=test_theta, test_obs=test_obs, generator=generator,
+                                                      n_test_samples=n_test_samples,
+                                                      n_generator_simulations=n_generator_simulations,
+                                                      batch_size=None, rej_thresh=rej_thresh,
+                                                      data_is_image=data_is_image)
 
 
 def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, n_test_samples, n_generator_simulations,

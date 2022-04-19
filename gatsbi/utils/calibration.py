@@ -6,6 +6,7 @@ import wandb
 from matplotlib.lines import Line2D
 from scipy.stats import binom
 from sklearn.metrics import r2_score
+from tqdm import tqdm
 
 from gatsbi.networks import WrapGenMultipleSimulations
 from gatsbi.optimize.utils import _sample
@@ -42,6 +43,8 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
     device = list(gen_wrapped.parameters())[0].device
     rej_thresh = rej_thresh.to(device)  # move to the right device
 
+    print("Generating simulations from the generative network...")
+
     with torch.no_grad():
         if rej_thresh is None:
             test_obs = test_obs.to(device)
@@ -56,7 +59,7 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
             test_theta_fake_all_obs = torch.concat(test_theta_fake_all_obs, 0)
         else:
             test_theta_fake_all_obs = []
-            for obs in test_obs:
+            for obs in tqdm(test_obs, ascii=True):
                 obs = obs.unsqueeze(0).to(device)
 
                 test_theta_fake_obs = []

@@ -40,6 +40,7 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
 
     gen_wrapped.eval()
     device = list(gen_wrapped.parameters())[0].device
+    rej_thresh = rej_thresh.to(device)  # move to the right device
 
     with torch.no_grad():
         if rej_thresh is None:

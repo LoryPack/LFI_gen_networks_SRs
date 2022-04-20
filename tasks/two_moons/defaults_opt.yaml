@@ -38,5 +38,5 @@ loss: cross_entropy
 max_norm_dis: .inf
 max_norm_gen: .inf
 num_simulations: 10000
-sample_seed: None
+sample_seed: 42
 stop_thresh: 0.001

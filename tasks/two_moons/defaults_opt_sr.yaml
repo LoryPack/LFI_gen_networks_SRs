@@ -17,6 +17,6 @@ gen_opt_args:
 - - 0.9
   - 0.99
 gen_seed: None
-hold_out: 100
+hold_out_perc: 0.2
 sample_seed: 42
 stop_thresh: 0.001

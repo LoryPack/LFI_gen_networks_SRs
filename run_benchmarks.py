@@ -2,6 +2,7 @@ import argparse
 from argparse import Namespace as NSp
 from os import makedirs
 from os.path import join
+from time import time
 
 import sbibm
 import torch
@@ -229,7 +230,11 @@ def main(args):
 
             # Train model
             print("Training")
+            start = time()
             opt.train(epochs, 100)
+            train_time = time() - start
+            print("Training took %.2f seconds" % train_time)
+            opt.logger.log({"train_time": train_time})
 
             make_results = MakeResults(
                 generator=opt.generator,

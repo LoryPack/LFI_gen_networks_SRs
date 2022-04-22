@@ -4,6 +4,7 @@ import importlib
 from argparse import Namespace as NSp
 from os import makedirs
 from os.path import join
+from time import time
 
 import torch
 import yaml
@@ -143,7 +144,12 @@ def main(args):
 
         # Train model
         print("Training")
+        start = time()
         opt.train(args.epochs, 200, start_early_stopping_after_epoch=1000)
+        train_time = time() - start
+        print("Training took %.2f seconds" % train_time)
+        if use_wandb:
+            opt.logger.log({"train_time": train_time})
 
         # compute other calibration metrics (which compare approximate posterior with true parameter value).
         # Also need to do those on a test set.

@@ -2,6 +2,7 @@ import argparse
 from argparse import Namespace as NSp
 from os import makedirs
 from os.path import join
+from time import time
 
 import sbibm
 import torch
@@ -126,7 +127,11 @@ def main(args):
 
         # Train model
         print("Training")
+        start = time()
         opt.train(epochs, 100, start_early_stopping_after_epoch=1000)
+        train_time = time() - start
+        print("Training took %.2f seconds" % train_time)
+        opt.logger.log({"train_time": train_time})
 
         # compute the C2ST values. That is done on newly generated observations, i.e. a test set. It compares the
         # approximate posterior to a reference posterior

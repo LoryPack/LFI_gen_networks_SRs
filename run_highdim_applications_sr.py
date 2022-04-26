@@ -195,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_simulations_generator", type=int, default=3)
     parser.add_argument("--no_wandb", action="store_true")
     parser.add_argument("--multi_gpu", type=bool, default=False)
-    parser.add_argument("--resume", type=bool, default=False)
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--run_id", type=str, default=None)
     parser.add_argument("--resume_dir", type=str, default=None,
                         help="Needs to be something as 'results/two_moons/wandb/run-20220325_172124-28i1s9ik/files', "

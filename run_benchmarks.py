@@ -274,7 +274,7 @@ if __name__ == "__main__":
     parser.add_argument("--group_name", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=20000)
     parser.add_argument("--num_training_simulations", type=int, default=10000)
-    parser.add_argument("--resume", type=bool, default=False)
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--run_id", type=str, default=None)
     parser.add_argument("--resume_dir", type=str, default=None)
     parser.add_argument("--no_cuda", action="store_true")

@@ -1,4 +1,4 @@
-batch_size_perc: .0125
+batch_size_perc: .00060
 gen_opt_args:
 - 0.0001
 - - 0.9
@@ -7,4 +7,4 @@ hold_out_perc: 0.2
 path_to_data: "./shallow_water_data/"
 log_dataloader: False
 sample_seed: 42
-num_training_simulations: 10000
+num_training_simulations: 100000

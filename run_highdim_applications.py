@@ -181,7 +181,8 @@ def main(args):
         fig_filename = join("results", args.task_name) + "/GAN_" + str(defaults["num_simulations"])
 
         res = compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
-                                    sbc_lines_kwargs={"name": "GAN",
+                                          norm_rmse=args.task_name != "camera_model",
+                                          sbc_lines_kwargs={"name": "GAN",
                                                       "filename": fig_filename + "_sbc_lines.pdf"},
                                     sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"})
         if use_wandb:

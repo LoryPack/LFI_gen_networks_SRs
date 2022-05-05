@@ -90,15 +90,15 @@ def generate_test_set_for_calibration_from_obs(test_theta, test_obs, generator, 
     return test_theta_fake_all_obs, test_theta
 
 
-def compute_calibration_metrics(theta_samples, theta_test, sbc_hist=False, sbc_lines=False, sbc_hist_kwargs={},
-                                sbc_lines_kwargs={}):
+def compute_calibration_metrics(theta_samples, theta_test, sbc_hist=False, sbc_lines=False, norm_rmse=True,
+                                sbc_hist_kwargs={}, sbc_lines_kwargs={}):
     test_theta_fake_numpy = theta_samples.transpose(1, 0).cpu().detach().numpy()
     test_theta_numpy = theta_test.cpu().numpy()
 
     # print("Compute metrics...")
     cal_err_val = calibration_error(test_theta_fake_numpy, test_theta_numpy, alpha_resolution=100)
     r2_val = R2(test_theta_fake_numpy, test_theta_numpy)
-    rmse_val = rmse(test_theta_fake_numpy, test_theta_numpy)
+    rmse_val = rmse(test_theta_fake_numpy, test_theta_numpy, normalized=norm_rmse)
     # print("Done")
 
     return_dict = {

@@ -175,6 +175,7 @@ def main(args):
             fig_filename += f"_patched_{args.patch_step}_{args.patch_size}"
 
         res = compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
+                                          norm_rmse=args.task_name != "camera_model",
                                     sbc_lines_kwargs={"name": args.scoring_rule,
                                                       "filename": fig_filename + "_sbc_lines.pdf"},
                                     sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"})

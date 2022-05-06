@@ -1,4 +1,4 @@
-batch_size_perc: .0125
+batch_size_perc: .00125
 dis_iter: 1
 dis_opt_args:
 - 0.0001

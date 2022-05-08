@@ -84,7 +84,10 @@ def main(args):
 
         if args.resume:
             assert args.resume_dir is not None
-            chpt = torch.load(join(args.resume_dir, "checkpoint_models0.pt"))
+            if args.no_cuda:
+                # kwargs for loading on cpu
+                kwargs = {"map_location": torch.device('cpu')}
+            chpt = torch.load(join(args.resume_dir, "checkpoint_models0.pt"), **kwargs)
             gen.load_state_dict(chpt["generator_state_dict"])
 
         if not args.no_cuda:

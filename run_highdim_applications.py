@@ -76,7 +76,10 @@ def main(args):
 
         if args.resume:
             assert args.resume_dir is not None
-            chpt = torch.load(join(args.resume_dir, "checkpoint_models0.pt"))
+            if args.no_cuda:
+                # kwargs for loading on cpu
+                kwargs = {"map_location": torch.device('cpu')}
+            chpt = torch.load(join(args.resume_dir, "checkpoint_models0.pt"), **kwargs)
             gen.load_state_dict(chpt["generator_state_dict"])
             dis.load_state_dict(chpt["dis_state_dict"])
 
@@ -183,8 +186,8 @@ def main(args):
         res = compute_calibration_metrics(test_theta_fake, test_theta, sbc_lines=True,
                                           norm_rmse=args.task_name != "camera_model",
                                           sbc_lines_kwargs={"name": "GAN",
-                                                      "filename": fig_filename + "_sbc_lines.pdf"},
-                                    sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"})
+                                                            "filename": fig_filename + "_sbc_lines.pdf"},
+                                          sbc_hist_kwargs={"filename": fig_filename + "_sbc_hist.pdf"})
         if use_wandb:
             opt.logger.log(res)
 

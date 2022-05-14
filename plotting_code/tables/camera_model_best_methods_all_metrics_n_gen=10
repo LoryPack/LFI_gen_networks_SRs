@@ -1,0 +1,9 @@
+\begin{tabular}{llllrr}
+\hline
+                        & RMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
+\hline
+ GAN 800000             & 0.25 $\pm$ 0.19       & 0.50 $\pm$ 0.00            & -23.94 $\pm$ 366.08  &           45398 &                   3600 \\
+ energy  10 patched 5 8 & 0.06 $\pm$ 0.05       & 0.36 $\pm$ 0.12            & -2.14 $\pm$ 55.86    &           22633 &                   4000 \\
+ kernel  10 patched 5 8 & 0.07 $\pm$ 0.05       & 0.36 $\pm$ 0.12            & -10.29 $\pm$ 222.12  &           22545 &                   3200 \\
+\hline
+\end{tabular}

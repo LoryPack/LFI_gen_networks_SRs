@@ -1,0 +1,7 @@
+\begin{tabular}{llllrr}
+\hline
+                          & RMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
+\hline
+ energy  10 patched 10 20 & 0.05 $\pm$ 0.01       & 0.03 $\pm$ 0.02            & 0.89 $\pm$ 0.05      &           60017 &                  12400 \\
+\hline
+\end{tabular}

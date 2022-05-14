@@ -1,0 +1,9 @@
+\begin{tabular}{lllllrr}
+\hline
+        & C2ST $ \downarrow $   & RMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
+\hline
+ GAN    & 0.82 $\pm$ 0.07       & 0.20 $\pm$ 0.00       & 0.07 $\pm$ 0.02            & 0.51 $\pm$ 0.01      &           30232 &                  20000 \\
+ Energy & 0.73 $\pm$ 0.04       & 0.20 $\pm$ 0.00       & 0.03 $\pm$ 0.00            & 0.51 $\pm$ 0.01      &           10805 &                  20000 \\
+ Kernel & 0.92 $\pm$ 0.02       & 0.20 $\pm$ 0.00       & 0.03 $\pm$ 0.01            & 0.50 $\pm$ 0.01      &           10902 &                  20000 \\
+\hline
+\end{tabular}

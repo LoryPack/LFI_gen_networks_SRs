@@ -1,0 +1,9 @@
+\begin{tabular}{rrrrrrrrrr}
+\hline
+        &   GAN &   Energy 3 &   Energy 5 &   Energy 10 &   Energy 20 &   Kernel 3 &   Kernel 5 &   Kernel 10 &   Kernel 20 \\
+\hline
+   1000 &  4799 &        578 &        690 &         759 &         896 &        585 &        613 &         651 &         852 \\
+  10000 &  8163 &       1775 &       1917 &        2415 &        3228 &       1708 &       1883 &        2329 &        3267 \\
+ 100000 & 30232 &       9266 &       9388 &        9903 &       10805 &       9283 &       9479 &        9859 &       10902 \\
+\hline
+\end{tabular}

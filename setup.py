@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-package_name = "gatsbi"
+package_name = "LFI_gen_networks_SRs"
 version = "1.0"
 exclusions = ["notebooks", "src"]
 
@@ -21,6 +21,8 @@ _base = [
     "seaborn",
     "torchvision",
     "torchtyping",
+    "tqdm",
+    "typeguard"
     "scikit-image",
     "jupyter",
 ]
@@ -32,11 +34,10 @@ _sbi_extras = [
 setup(
     name=package_name,
     version=version,
-    description="Generative Adversarial Networks for Simulation-Based\
-                   Inference",
-    author="Poornima Ramesh",
-    author_email="poornima.ramesh@tum.de",
-    url="https://github.com/mackelab/gatsbi",
-    packages=["gatsbi", "tests"],
+    description="Likelihood-Free Inference with Generative Neural Networks via Scoring Rule Minimization",
+    author="Lorenzo Pacchiardi",
+    author_email="lorenzo.pacchiardi@stats.ox.ac.uk",
+    url="https://github.com/LoryPack/LFI_gen_networks_SRs",
+    packages=["LFI_gen_networks_SRs", "tests"],
     install_requires=(_base + _packages + _sbi_extras),
 )

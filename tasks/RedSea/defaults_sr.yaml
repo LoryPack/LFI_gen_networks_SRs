@@ -1,0 +1,10 @@
+batch_size_perc: 0.001
+gen_opt_args:
+- 0.0001
+- - 0.9
+  - 0.99
+hold_out_perc: 0.2
+path_to_data: "./data_RedSea/"
+log_dataloader: False
+sample_seed: 42
+num_training_simulations: 100000

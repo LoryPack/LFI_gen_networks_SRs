@@ -1,12 +1,12 @@
 \begin{tabular}{llllrr}
 \hline
-                          & RMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
+                          & NRMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
 \hline
- energy  10               & 0.05 $\pm$ 0.01       & 0.03 $\pm$ 0.02            & 0.87 $\pm$ 0.05      &           51328 &                  10400 \\
- energy  10 patched 10 20 & 0.05 $\pm$ 0.01       & 0.03 $\pm$ 0.02            & 0.89 $\pm$ 0.05      &           60017 &                  12400 \\
- energy  10 patched 5 10  & 0.06 $\pm$ 0.01       & 0.03 $\pm$ 0.02            & 0.86 $\pm$ 0.06      &           49626 &                   9600 \\
- kernel  10               & 0.06 $\pm$ 0.01       & 0.11 $\pm$ 0.05            & 0.84 $\pm$ 0.06      &           39608 &                   7800 \\
- kernel  10 patched 10 20 & 0.06 $\pm$ 0.01       & 0.09 $\pm$ 0.04            & 0.86 $\pm$ 0.06      &           47642 &                   9000 \\
- kernel  10 patched 5 10  & 0.06 $\pm$ 0.01       & 0.09 $\pm$ 0.04            & 0.86 $\pm$ 0.06      &           44590 &                   9200 \\
+ energy  10               & 0.05 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.87 $\pm$ 0.05      &           51328 &                  10400 \\
+ energy  10 patched 10 20 & 0.05 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.89 $\pm$ 0.05      &           60017 &                  12400 \\
+ energy  10 patched 5 10  & 0.06 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.86 $\pm$ 0.06      &           49626 &                   9600 \\
+ kernel  10               & 0.06 $\pm$ 0.01        & 0.11 $\pm$ 0.05            & 0.84 $\pm$ 0.06      &           39608 &                   7800 \\
+ kernel  10 patched 10 20 & 0.06 $\pm$ 0.01        & 0.09 $\pm$ 0.04            & 0.86 $\pm$ 0.06      &           47642 &                   9000 \\
+ kernel  10 patched 5 10  & 0.06 $\pm$ 0.01        & 0.09 $\pm$ 0.04            & 0.86 $\pm$ 0.06      &           44590 &                   9200 \\
 \hline
 \end{tabular}

@@ -26,7 +26,7 @@ For a minimal, see `quickstart.ipynb`.
 
 ### Experiments
 ___
-Following the [GATSBI paper](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)), we provide results for the following experiments: 2 benchmark tasks, the shallow water model, and a noisy camera model.
+We provide results for the following experiments: 2 benchmark tasks (not included in the paper), the shallow water model, a noisy camera model, and a real-world dataset for Red Sea surface temperature extremes with a spatial model.
 
 Code for setting up priors, simulator, neural networks and any other pre-/post-processing code is available inside `gatsbi.task_utils`.
 
@@ -45,6 +45,10 @@ This repository includes scripts to reproduce the experiments in the [GATSBI pap
     ```
     `task_name` = `shallow_water_model` or `camera_model`.
     Note that we **do not** provide training data for the shallow water model in this repository. Please use `sample_shallow_water.py` to generate training samples locally.
+    ```
+    python run_ResSea.py --project_name="RedSea" --task_name="RedSea"
+    ```
+  For running the spatial extremes model on the Red Sea dataset.
 
 Running those scripts relies on `wandb` to log experiments unless the argument `--no_wandb` is passed. Check inside the code, or run `python run_highdim_applications.py --help` for more information.  
 

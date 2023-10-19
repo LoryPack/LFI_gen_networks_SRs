@@ -1,7 +1,7 @@
-# Likelihood-Free Inference with Generative Neural Networks via Scoring Rule Minimization
+# Simulation-Based Inference with Generative Neural Networks via Scoring Rule Minimization
 ---
 
-This repository provides code to reproduce the experiments in the paper [Likelihood-Free Inference with Generative Neural Networks via Scoring Rule Minimization](https://arxiv.org/abs/2205.15784). The code is based on the one for the paper ["GATSBI: Generative Adversarial Training for Simulation-Based Inference"](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)), which can be found at [https://github.com/mackelab/gatsbi](https://github.com/mackelab/gatsbi) and is distributed under a AGPL-3.0 license.
+This repository provides code to reproduce the experiments in the paper [Simulation-Based Inference with Generative Neural Networks via Scoring Rule Minimization](https://arxiv.org/abs/2205.15784). The code is based on the one for the paper ["GATSBI: Generative Adversarial Training for Simulation-Based Inference"](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)), which can be found at [https://github.com/mackelab/gatsbi](https://github.com/mackelab/gatsbi) and is distributed under a AGPL-3.0 license.
 
 
 The code is written in Python and uses the [`torch`](https://pytorch.org/) library to handle neural networks. It depends both on the simulation-based inference package [`sbi`](https://github.com/mackelab/sbi) and the benchmark framework [`sbibm`](https://github.com/mackelab/sbibm).
@@ -12,7 +12,7 @@ You can use this code in two different ways:
 #### 1. Installing the package
 The code comes as a package that you can install within a working Python environment `pip`:
 ```
-pip install "git+https://github.com/LoryPack/LFI_gen_networks_SRs"
+pip install "git+https://github.com/LoryPack/SBI_gen_networks_SRs"
 ```
 #### 2. Downloading the code
 You can directly download the code and run scripts from the main folder. In that case, the requirements can be installed with `pip`:
@@ -33,7 +33,7 @@ Code for setting up priors, simulator, neural networks and any other pre-/post-p
 Hyperparameter settings for each of the experiments are available in `tasks/`
 
 
-This repository includes scripts to reproduce the experiments in the [GATSBI paper](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)) which were already contained in the [GATSBI repository](https://github.com/mackelab/gatsbi), with some minor changes. Additionally, we provide scripts to run experiments with the Scoring Rules training methods discussed in [our paper](LINK):
+This repository includes scripts to reproduce the experiments in the [GATSBI paper](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)) which were already contained in the [GATSBI repository](https://github.com/mackelab/gatsbi), with some minor changes. Additionally, we provide scripts to run experiments with the Scoring Rules training methods discussed in [our paper](https://arxiv.org/abs/2205.15784):
 - `run_benchmarks_sr.py` for the benchmark tasks
     ```
     python run_benchmarks_sr.py --project_name="Benchmarks" --task_name="two_moons"

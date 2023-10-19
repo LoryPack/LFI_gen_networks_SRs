@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-package_name = "LFI_gen_networks_SRs"
+package_name = "SBI_gen_networks_SRs"
 version = "1.0"
 exclusions = ["notebooks", "src"]
 
@@ -34,10 +34,10 @@ _sbi_extras = [
 setup(
     name=package_name,
     version=version,
-    description="Likelihood-Free Inference with Generative Neural Networks via Scoring Rule Minimization",
+    description="Simulation-Based Inference with Generative Neural Networks via Scoring Rule Minimization",
     author="Lorenzo Pacchiardi",
-    author_email="lorenzo.pacchiardi@stats.ox.ac.uk",
-    url="https://github.com/LoryPack/LFI_gen_networks_SRs",
-    packages=["LFI_gen_networks_SRs", "tests"],
+    author_email="lorenzo.pacchiardi@gmail.com",
+    url="https://github.com/LoryPack/SBI_gen_networks_SRs",
+    packages=["SBI_gen_networks_SRs", "tests"],
     install_requires=(_base + _packages + _sbi_extras),
 )

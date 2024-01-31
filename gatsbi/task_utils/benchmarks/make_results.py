@@ -55,8 +55,11 @@ class MakeResults:
         # get gen samples
         num_samples = len(self.task.get_reference_posterior_samples(obs_num))
 
-        # need only the upper bound, because prior bounds are symmetric for both apps
-        rej_thresh = self.task.prior_params["high"]
+        # if the prior is bounded, then need to reject some samples. gaussian_linear, sir and lotka_volterra
+        # have unbounded priors
+        if hasattr(self.task.prior_params, "high"):
+            # need only the upper bound, because prior bounds are symmetric for the tasks we consider
+            rej_thresh = self.task.prior_params["high"]
 
         if self.cuda:
             self.generator.cuda()
@@ -82,7 +85,10 @@ class MakeResults:
                 z = self.lat_dist.sample(torch.Size([sample_size]))
                 samp = self.generator.forward([z, obs_repeat]).data.cpu()
 
-            inds = torch.all(torch.abs(samp) < rej_thresh, -1)
+            if hasattr(self.task.prior_params, "high"):
+                inds = torch.all(torch.abs(samp) < rej_thresh, -1)
+            else:
+                inds = torch.ones(samp.shape[0], dtype=torch.bool)
             i = sum(inds)
             gatsbi_samples.append(samp[inds])
 

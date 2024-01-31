@@ -64,6 +64,9 @@ def main(args):
         task = sbibm.get_task(task_name)
         simulator = task.get_simulator()
         prior = task.get_prior()
+        print("Task: %s" % task_name)
+        print("Dimension of parameters: %d" % task.dim_parameters)
+        print("Dimension of data: %d" % task.dim_data)
 
         start = 0
         epochs_per_round = [args.epochs]

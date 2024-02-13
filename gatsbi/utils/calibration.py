@@ -99,6 +99,7 @@ def compute_calibration_metrics(theta_samples, theta_test, sbc_hist=False, sbc_l
     cal_err_val = calibration_error(test_theta_fake_numpy, test_theta_numpy, alpha_resolution=100)
     r2_val = R2(test_theta_fake_numpy, test_theta_numpy)
     rmse_val = rmse(test_theta_fake_numpy, test_theta_numpy, normalized=norm_rmse)
+    crps_val = estimate_CRPS_score(test_theta_fake_numpy, test_theta_numpy)
     # print("Done")
 
     return_dict = {
@@ -108,6 +109,8 @@ def compute_calibration_metrics(theta_samples, theta_test, sbc_hist=False, sbc_l
         "cal_err_val_std": cal_err_val.std(),
         "r2_val_std": r2_val.std(),
         "rmse_val_std": rmse_val.std(),
+        "crps_val_mean": crps_val.mean(),
+        "crps_val_std": crps_val.std()
     }
 
     if sbc_hist or sbc_lines:
@@ -382,3 +385,47 @@ def R2(theta_samples, theta_test):
 
     theta_approx_means = theta_samples.mean(0)
     return r2_score(theta_test, theta_approx_means, multioutput='raw_values')
+
+
+def _estimate_CRPS_score(observation, simulations):
+    """observation is a single value, while simulations is an array. We estimate this by building an empirical
+     unbiased estimate of Eq. (1) in Ziel and Berk 2019"""
+    diff_X_y = np.abs(observation - simulations)
+    n_sim = simulations.shape[0]
+    diff_X_tildeX = np.abs(simulations.reshape(1, -1) - simulations.reshape(-1, 1))
+
+    return 2 * np.mean(diff_X_y) - np.sum(diff_X_tildeX) / (n_sim * (n_sim - 1))
+
+
+def estimate_CRPS_score(theta_samples, theta_test):
+    """
+    This implememtation is quite inefficient
+
+    ----------
+    Arguments:
+    theta_samples   : np.ndarray of shape (n_samples, n_test, n_params) -- the samples from
+                          the approximate posterior
+    theta_test      : np.ndarray of shape (n_test, n_params) -- the 'true' test values
+
+    ----------
+    Returns:
+
+    crps  : np.ndarray of shape (n_params, ) -- the crps per parameter, averaged over test elements
+
+    """
+
+    # Convert tf.Tensors to numpy, if passed
+    if type(theta_samples) is not np.ndarray:
+        theta_samples = theta_samples.numpy()
+    if type(theta_test) is not np.ndarray:
+        theta_test = theta_test.numpy()
+
+    # Compute the CRPS score for each test element and parameter
+    crps = np.zeros((theta_test.shape[0], theta_test.shape[1]))
+    for i in range(theta_test.shape[0]):
+        for j in range(theta_test.shape[1]):
+            crps[i, j] = _estimate_CRPS_score(theta_test[i, j], theta_samples[:, i, j])
+    # compute mean over the first dimension
+    crps = np.mean(crps, axis=0)
+
+    return crps

@@ -1,13 +1,13 @@
-\begin{tabular}{llllrr}
+\begin{tabular}{lllrr}
 \hline
-                         & RMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $    &   Runtime (sec) &   Early stopping epoch \\
+                         & Cal. Err. $ \downarrow $   & CRPS $ \downarrow $   &   Runtime (sec) &   Early stopping epoch \\
 \hline
- GAN 800000              & 0.25 $\pm$ 0.19       & 0.50 $\pm$ 0.00            & -23.94 $\pm$ 366.08   &           45398 &                   3600 \\
- energy  10              & 0.08 $\pm$ 0.05       & 0.36 $\pm$ 0.12            & -24.39 $\pm$ 450.13   &           24555 &                   4200 \\
- energy  10 patched 5 8  & 0.06 $\pm$ 0.05       & 0.36 $\pm$ 0.12            & -2.14 $\pm$ 55.86     &           22633 &                   4000 \\
- energy  10 patched 7 14 & 0.07 $\pm$ 0.05       & 0.37 $\pm$ 0.12            & -10.33 $\pm$ 227.38   &           24033 &                   3600 \\
- kernel  10              & 0.06 $\pm$ 0.05       & 0.32 $\pm$ 0.15            & -7.22 $\pm$ 164.26    &           21862 &                   3200 \\
- kernel  10 patched 5 8  & 0.07 $\pm$ 0.05       & 0.36 $\pm$ 0.12            & -10.29 $\pm$ 222.12   &           22545 &                   3200 \\
- kernel  10 patched 7 14 & 0.10 $\pm$ 0.06       & 0.38 $\pm$ 0.11            & -144.56 $\pm$ 2952.80 &           20605 &                   3600 \\
+ GAN 800000              & 0.50 $\pm$ 0.01            & 0.28 $\pm$ 0.26       &           45398 &                   3600 \\
+ energy  10              & 0.36 $\pm$ 0.12            & 0.05 $\pm$ 0.04       &           24555 &                   4200 \\
+ energy  10 patched 5 8  & 0.37 $\pm$ 0.12            & 0.04 $\pm$ 0.03       &           22633 &                   4000 \\
+ energy  10 patched 7 14 & 0.37 $\pm$ 0.12            & 0.05 $\pm$ 0.03       &           24033 &                   3600 \\
+ kernel  10              & 0.33 $\pm$ 0.15            & 0.05 $\pm$ 0.03       &           21862 &                   3200 \\
+ kernel  10 patched 5 8  & 0.36 $\pm$ 0.12            & 0.06 $\pm$ 0.04       &           22545 &                   3200 \\
+ kernel  10 patched 7 14 & 0.38 $\pm$ 0.11            & 0.07 $\pm$ 0.04       &           20605 &                   3600 \\
 \hline
 \end{tabular}

@@ -1,7 +1,8 @@
-\begin{tabular}{llllrr}
+\begin{tabular}{lllrr}
 \hline
-                          & NRMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
+                          & Cal. Err. $ \downarrow $   & CRPS $ \downarrow $   &   Runtime (sec) &   Early stopping epoch \\
 \hline
- energy  10 patched 10 20 & 0.05 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.89 $\pm$ 0.05      &           60017 &                  12400 \\
+ energy  10 patched 10 20 & 0.03 $\pm$ 0.02            & 0.99 $\pm$ 0.53       &           60017 &                  12400 \\
+ GATSBI &  0.12 $\pm$ 0.09   & 1.43 $\pm$ 0.91 & $ \approx $345600 & - \\
 \hline
 \end{tabular}

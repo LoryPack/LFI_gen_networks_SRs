@@ -1,12 +1,13 @@
-\begin{tabular}{llllrr}
+\begin{tabular}{lllrr}
 \hline
-                          & NRMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
+                          & Cal. Err. $ \downarrow $   & CRPS $ \downarrow $   &   Runtime (sec) &   Early stopping epoch \\
 \hline
- energy  10               & 0.05 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.87 $\pm$ 0.05      &           51328 &                  10400 \\
- energy  10 patched 10 20 & 0.05 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.89 $\pm$ 0.05      &           60017 &                  12400 \\
- energy  10 patched 5 10  & 0.06 $\pm$ 0.01        & 0.03 $\pm$ 0.02            & 0.86 $\pm$ 0.06      &           49626 &                   9600 \\
- kernel  10               & 0.06 $\pm$ 0.01        & 0.11 $\pm$ 0.05            & 0.84 $\pm$ 0.06      &           39608 &                   7800 \\
- kernel  10 patched 10 20 & 0.06 $\pm$ 0.01        & 0.09 $\pm$ 0.04            & 0.86 $\pm$ 0.06      &           47642 &                   9000 \\
- kernel  10 patched 5 10  & 0.06 $\pm$ 0.01        & 0.09 $\pm$ 0.04            & 0.86 $\pm$ 0.06      &           44590 &                   9200 \\
+ energy  10               & 0.03 $\pm$ 0.02            & 1.46 $\pm$ 0.34       &           51328 &                  10400 \\
+ energy  10 patched 10 20 & 0.03 $\pm$ 0.02            & 0.99 $\pm$ 0.53       &           60017 &                  12400 \\
+ energy  10 patched 5 10  & 0.03 $\pm$ 0.02            & 1.54 $\pm$ 0.37       &           49626 &                   9600 \\
+ kernel  10               & 0.11 $\pm$ 0.05            & 1.24 $\pm$ 0.90       &           39608 &                   7800 \\
+ kernel  10 patched 10 20 & 0.09 $\pm$ 0.04            & 1.40 $\pm$ 0.86       &           47642 &                   9000 \\
+ kernel  10 patched 5 10  & 0.09 $\pm$ 0.04            & 1.29 $\pm$ 0.65       &           44590 &                   9200 \\
+ GATSBI &  0.12 $\pm$ 0.09   & 1.43 $\pm$ 0.91 & $ \approx $345600 & - \\
 \hline
 \end{tabular}

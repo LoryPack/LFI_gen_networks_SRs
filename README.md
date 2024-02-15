@@ -6,6 +6,15 @@ This repository provides code to reproduce the experiments in the paper [Simulat
 
 The code is written in Python and uses the [`torch`](https://pytorch.org/) library to handle neural networks. It depends both on the simulation-based inference package [`sbi`](https://github.com/mackelab/sbi) and the benchmark framework [`sbibm`](https://github.com/mackelab/sbibm).
 
+You also need to install [Julia](https://julialang.org/downloads/) to run the SIR and Lotka-Volterra models and then run the following:
+
+```
+pip install diffeqtorch
+export JULIA_SYSIMAGE_DIFFEQTORCH="$HOME/.julia_sysimage_diffeqtorch.so"
+python -c "from diffeqtorch.install import install_and_test; install_and_test()"
+```
+
+
 ### Installation
 ___
 You can use this code in two different ways: 
@@ -26,19 +35,19 @@ For a minimal, see `quickstart.ipynb`.
 
 ### Experiments
 ___
-We provide results for the following experiments: 2 benchmark tasks (not included in the paper), the shallow water model, a noisy camera model, and a real-world dataset for Red Sea surface temperature extremes with a spatial model.
+We provide results for the following experiments: 5 benchmark tasks, the shallow water model and a noisy camera model.
 
 Code for setting up priors, simulator, neural networks and any other pre-/post-processing code is available inside `gatsbi.task_utils`.
 
 Hyperparameter settings for each of the experiments are available in `tasks/`
 
 
-This repository includes scripts to reproduce the experiments in the [GATSBI paper](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)) which were already contained in the [GATSBI repository](https://github.com/mackelab/gatsbi), with some minor changes. Additionally, we provide scripts to run experiments with the Scoring Rules training methods discussed in [our paper](https://arxiv.org/abs/2205.15784):
+This repository includes scripts to reproduce the experiments in the [GATSBI paper](https://openreview.net/forum?id=kR1hC6j48Tp&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2022%2FConference%2FAuthors%23your-submissions)) which were already contained in the [GATSBI repository](https://github.com/mackelab/gatsbi), with some minor changes (and three additional benchmark tasks). Additionally, we provide scripts to run experiments with the Scoring Rules training methods discussed in [our paper](https://arxiv.org/abs/2205.15784):
 - `run_benchmarks_sr.py` for the benchmark tasks
     ```
     python run_benchmarks_sr.py --project_name="Benchmarks" --task_name="two_moons"
     ```
-    `task_name` = `slcp` or `two_moons`
+    `task_name` = `slcp`, `two_moons` or any other task included [here](https://github.com/sbi-benchmark/sbibm/tree/main/sbibm/tasks) (we provide results for `slcp`, `two_moons`, `gaussian_mixture`, `gaussian_linear` and `bernoulli_glm`).
 - `run_highdim_applications_sr.py` for the noisy camera model and the shallow water model  
     ```
     python run_highdim_applications_sr.py --project_name="High Dimensional Applications" --task_name="shallow_water_model"

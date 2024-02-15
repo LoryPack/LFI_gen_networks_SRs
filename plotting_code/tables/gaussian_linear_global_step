@@ -1,0 +1,9 @@
+\begin{tabular}{rrrrrrrrrr}
+\hline
+        &   GATSBI &   Energy 3 &   Energy 5 &   Energy 10 &   Energy 20 &   Kernel3 &   Kernel5 &   Kernel10 &   Kernel20 \\
+\hline
+   1000 &    20000 &       1000 &       1400 &        1000 &        1000 &      1000 &      1000 &       1200 &       1100 \\
+  10000 &    20000 &       1100 &       1100 &        1800 &        1700 &      1200 &      1300 &       1400 &       2000 \\
+ 100000 &    20000 &       1500 &       2600 &        1900 &        2500 &      1800 &      1700 &       2000 &       2100 \\
+\hline
+\end{tabular}

@@ -1,6 +1,6 @@
 \begin{tabular}{rlllllllll}
 \hline
-        & GAN             & Energy 3        & Energy 5        & Energy 10       & Energy 20       & Kernel 3        & Kernel 5        & Kernel 10       & Kernel 20       \\
+        & GATSBI          & Energy 3        & Energy 5        & Energy 10       & Energy 20       & Kernel3         & Kernel5         & Kernel10        & Kernel20        \\
 \hline
    1000 & 0.97 $\pm$ 0.02 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.00 & 0.99 $\pm$ 0.01 & 1.00 $\pm$ 0.01 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.01 \\
   10000 & 0.94 $\pm$ 0.03 & 0.98 $\pm$ 0.01 & 0.97 $\pm$ 0.01 & 0.98 $\pm$ 0.01 & 0.98 $\pm$ 0.01 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.01 & 0.99 $\pm$ 0.01 \\

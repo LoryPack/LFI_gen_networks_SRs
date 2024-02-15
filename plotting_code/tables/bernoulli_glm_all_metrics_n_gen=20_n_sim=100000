@@ -1,0 +1,9 @@
+\begin{tabular}{llllrr}
+\hline
+        & C2ST $ \downarrow $   & Cal. Err. $ \downarrow $   & CRPS $ \downarrow $   &   Runtime (sec) &   Early stopping epoch \\
+\hline
+ GATSBI & 0.94 $\pm$ 0.01       & 0.09 $\pm$ 0.03            & 0.45 $\pm$ 0.05       &        42929.7  &                  20000 \\
+ Energy & 0.94 $\pm$ 0.02       & 0.02 $\pm$ 0.01            & 0.47 $\pm$ 0.05       &         2850.84 &                   3700 \\
+ Kernel & 0.96 $\pm$ 0.02       & 0.03 $\pm$ 0.01            & 0.49 $\pm$ 0.06       &         2446.52 &                   3200 \\
+\hline
+\end{tabular}

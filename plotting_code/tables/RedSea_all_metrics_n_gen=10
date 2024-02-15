@@ -1,8 +1,0 @@
-\begin{tabular}{llllrr}
-\hline
-               & NRMSE $ \downarrow $   & Cal. Err. $ \downarrow $   & R$^2$ $ \uparrow $   &   Runtime (sec) &   Early stopping epoch \\
-\hline
- Energy-20-cpu & 0.26 $\pm$ 0.03        & 0.08 $\pm$ 0.07            & 0.15 $\pm$ 0.18      &         1858.94 &                   1200 \\
- Kernel-20-cpu & 0.26 $\pm$ 0.03        & 0.26 $\pm$ 0.16            & 0.20 $\pm$ 0.18      &         2118.34 &                   1400 \\
-\hline
-\end{tabular}
